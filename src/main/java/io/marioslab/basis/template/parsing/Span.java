@@ -13,6 +13,8 @@ public class Span {
 
 	public Span (String source) {
 		this.source = source;
+		this.start = 0;
+		this.end = source.length();
 	}
 
 	public Span (String source, int start, int end) {

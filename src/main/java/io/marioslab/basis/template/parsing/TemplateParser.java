@@ -1,8 +1,6 @@
 package io.marioslab.basis.template.parsing;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -18,136 +16,117 @@ public class TemplateParser {
 		while (segments.hasNext()) {
 			TemplateSegment segment = segments.next();
 
-			if (segment.getText().startsWith("{{")) {
+			if (segment.getText().startsWith("{{"))
 				parseStatement(segment, segments, nodes);
-			} else {
+			else
 				nodes.add(new TextNode(segment.getSpan()));
-			}
 		}
 		return new Template(nodes);
 	}
 
 	private void parseStatement(TemplateSegment segment, Iterator<TemplateSegment> segments, List<Node> nodes) {
 		List<Token> tokens = tokenize(segment.getSpan());
+		if (tokens.size() == 0) return;
+
+		TokenStream stream = new TokenStream(tokens);
+		if (stream.match("if", false))
+			parseIfStatement(stream, segments, nodes);
+		else if (stream.match("for", false))
+			parseForStatement(stream, segments, nodes);
+		else
+			nodes.add(parseExpression(stream));
 	}
 
-	private List<Token> tokenize (Span span) {
+	private void parseIfStatement(TokenStream stream, Iterator<TemplateSegment> segments, List<Node> nodes) {
+		stream.matchOrError("if", true);
+
+	}
+
+	private void parseForStatement(TokenStream stream, Iterator<TemplateSegment> segments, List<Node> nodes) {
+		stream.matchOrError("for", true);
+	}
+
+	private ExpressionNode parseExpression(TokenStream stream) {
+		return null;
+	}
+
+	public static List<Token> tokenize (Span span) {
 		String source = span.source;
 		CharacterStream stream = new CharacterStream(source, span.start, span.end);
 		List<Token> tokens = new ArrayList<Token>();
 
+		// match opening tag
 		if (!stream.match("{{", true)) error("Expected {{", new Span(source, stream.getIndex(), stream.getIndex() + 1));
 
+		outer:
 		while (stream.hasMore()) {
 			// skip whitespace
 			stream.skipWhiteSpace();
 
+			// Number literal
+			if (stream.matchDigit(false)) {
+				stream.startSpan();
+				while (stream.matchDigit(true));
+				if (stream.match(TokenType.Period.getLiteral(), true))
+					while (stream.matchDigit(true));
+				Span numberSpan = stream.endSpan();
+				tokens.add(new Token(TokenType.NumberLiteral, numberSpan));
+				continue;
+			}
+
+			// String literal
+			if (stream.match(TokenType.DoubleQuote.literal, true)) {
+				stream.startSpan();
+				boolean matchedEndQuote = false;
+				while (stream.hasMore()) {
+					if (stream.match("\\\"", true)) continue;
+					if (stream.match(TokenType.DoubleQuote.literal, true)) {
+						matchedEndQuote = true;
+						break;
+					}
+					stream.next();
+				}
+				if (!matchedEndQuote) error("String literal is not closed by double quote", stream.endSpan());
+				Span stringSpan = stream.endSpan();
+				stringSpan.start--;
+				tokens.add(new Token(TokenType.StringLiteral, stringSpan));
+				continue;
+			}
+
+			// Identifiers
+			if (stream.matchIdentifierStart(true)) {
+				stream.startSpan();
+				while (stream.matchIdentifierPart(true));
+				Span identifierSpan = stream.endSpan();
+				identifierSpan.start--;
+				tokens.add(new Token(TokenType.Identifier, identifierSpan));
+				continue;
+			}
+
 			// Simple tokens
-			for (TokenType t: TokenType.getValues()) {
+			for (TokenType t: TokenType.getSortedValues()) {
 				if (t.literal != null) {
 					if (stream.match(t.literal, true)) {
-						tokens.add(new Token(TokenType.Period, new Span(source, stream.getIndex() - t.literal.length(), stream.getIndex())));
-						continue;
+						tokens.add(new Token(t, new Span(source, stream.getIndex() - t.literal.length(), stream.getIndex())));
+						continue outer;
 					}
 				}
 			}
 
-			// Number literal
+			// match closing tag
+			if (stream.match("}}", false)) break;
 
 			error("Unknown token", new Span(source, stream.getIndex(), stream.getIndex() + 1));
 		}
 
+		// just another sanity check
 		if (!stream.match("}}", true)) error("Expected }}", new Span(source, stream.getIndex(), stream.getIndex() + 1));
 		return tokens;
 	}
 
-	private void error (String message, Span location) {
+	public static void error (String message, Span location) {
 		// TODO generate line numbers and nice error message.
-		throw new RuntimeException("Error: " + message);
-	}
-
-	private static enum TokenType {
-		Identifier,
-		Period("."),
-		Plus("+"),
-		Minus("-"),
-		Asterisk("*"),
-		Division("/"),
-		LeftParanthese("("),
-		RightParanthese(")"),
-		LeftBracket("["),
-		RightBracket("]"),
-		Less("<"),
-		Greater(">"),
-		LessEqual("<="),
-		GreaterEqual(">="),
-		Equal("=="),
-		Assignment("="),
-		And("&&"),
-		Or("||"),
-		Not("!"),
-		NumberLiteral,
-		StringLiteral;
-
-		private static TokenType[] values;
-
-		static {
-			values = TokenType.values();
-			Arrays.sort(values, new Comparator<TokenType>() {
-				@Override
-				public int compare (TokenType o1, TokenType o2) {
-					if (o1.literal == null && o2.literal == null) {
-						return 0;
-					}
-
-					if (o1.literal == null && o2.literal != null) {
-						return 1;
-					}
-
-					if (o1.literal != null && o2.literal == null) {
-						return -1;
-					}
-
-					return o2.literal.length() - o1.literal.length();
-				}
-			});
-		}
-
-		private final String literal;
-
-		TokenType () {
-			this.literal = null;
-		}
-
-		TokenType (String literal) {
-			this.literal = literal;
-		}
-
-		public String getLiteral () {
-			return literal;
-		}
-
-		public static TokenType[] getValues () {
-			return values;
-		}
-	}
-
-	private static class Token {
-		private final TokenType type;
-		private final Span span;
-
-		public Token (TokenType type, Span span) {
-			this.type = type;
-			this.span = span;
-		}
-
-		public TokenType getType () {
-			return type;
-		}
-
-		public Span getSpan () {
-			return span;
-		}
+		throw new RuntimeException("Error: " + message + ", " + location.getText());
 	}
 
 	public static class Node {
@@ -164,6 +143,12 @@ public class TemplateParser {
 
 	public static class TextNode extends Node {
 		public TextNode (Span span) {
+			super(span);
+		}
+	}
+
+	public static class ExpressionNode extends Node {
+		public ExpressionNode (Span span) {
 			super(span);
 		}
 	}

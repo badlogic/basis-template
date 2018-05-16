@@ -41,6 +41,36 @@ public class CharacterStream {
 		return true;
 	}
 
+	public boolean matchDigit(boolean consume) {
+		if (index >= end) return false;
+		char c = source.charAt(index);
+		if (Character.isDigit(c)) {
+			if (consume) index++;
+			return true;
+		}
+		return false;
+	}
+
+	public boolean matchIdentifierStart (boolean consume) {
+		if (index >= end) return false;
+		char c = source.charAt(index);
+		if (Character.isJavaIdentifierStart(c)) {
+			if (consume) index++;
+			return true;
+		}
+		return false;
+	}
+
+	public boolean matchIdentifierPart (boolean consume) {
+		if (index >= end) return false;
+		char c = source.charAt(index);
+		if (Character.isJavaIdentifierPart(c)) {
+			if (consume) index++;
+			return true;
+		}
+		return false;
+	}
+
 	public void skipWhiteSpace() {
 		while (true) {
 			if (index >= end) return;
