@@ -3,7 +3,7 @@ package io.marioslab.basis.template;
 
 import java.util.List;
 
-import io.marioslab.basis.template.parsing.TemplateParser.Node;
+import io.marioslab.basis.template.parsing.Parser.Node;
 
 public class Template {
 	private final List<Node> nodes;

@@ -6,6 +6,7 @@ import java.util.Comparator;
 
 public enum TokenType {
 	// @off
+	TextBlock,
 	Period("."),
 	Comma(","),
 	Semicolon(";"),
@@ -13,6 +14,7 @@ public enum TokenType {
 	Minus("-"),
 	Asterisk("*"),
 	Division("/"),
+	Modulo("%"),
 	LeftParantheses("("),
 	RightParantheses(")"),
 	LeftBracket("["),

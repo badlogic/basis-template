@@ -1,5 +1,7 @@
+
 package io.marioslab.basis.template.parsing;
 
+/** A token produced by the {@link Tokenizer}. */
 public class Token {
 	private final TokenType type;
 	private final Span span;
@@ -17,20 +19,22 @@ public class Token {
 		return span;
 	}
 
-	@Override
-	public String toString () {
-		return "Token [type=" + type + ", span=" + span + "]";
-	}
-
 	public String getText () {
 		return span.getText();
 	}
 
-	public boolean match(TokenType type) {
+	/** @return whether the token matches the type. */
+	public boolean match (TokenType type) {
 		return this.type == type;
 	}
 
-	public boolean matches(TokenType type, String text) {
+	/** @return whether the token matches the type and text. */
+	public boolean matches (TokenType type, String text) {
 		return this.type == type && span.getText() == text;
+	}
+
+	@Override
+	public String toString () {
+		return "Token [type=" + type + ", span=" + span + "]";
 	}
 }

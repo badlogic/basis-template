@@ -1,3 +1,4 @@
+
 package io.marioslab.basis.template.parsing;
 
 /** A span within a source string denoted by start and end index, with the latter being exclusive. */
@@ -12,12 +13,15 @@ public class Span {
 	public int end;
 
 	public Span (String source) {
-		this.source = source;
-		this.start = 0;
-		this.end = source.length();
+		this(source, 0, source.length());
 	}
 
 	public Span (String source, int start, int end) {
+		if (start > end) throw new IllegalArgumentException("Start must be <= end.");
+		if (start < 0) throw new IndexOutOfBoundsException("Start must be >= 0.");
+		if (start > source.length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
+		if (end > source.length()) throw new IndexOutOfBoundsException("End outside of string.");
+
 		this.source = source;
 		this.start = start;
 		this.end = end;

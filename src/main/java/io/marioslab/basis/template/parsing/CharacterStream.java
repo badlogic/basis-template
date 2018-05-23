@@ -1,7 +1,8 @@
+
 package io.marioslab.basis.template.parsing;
 
 /** Wraps a source string and handles traversing the contained characters. Manages a current {@link Span} via the
- * {@link #startSpan()} and {@link #endSpan()} methods.*/
+ * {@link #startSpan()} and {@link #endSpan()} methods. */
 public class CharacterStream {
 	private Span span;
 	private final String source;
@@ -13,6 +14,11 @@ public class CharacterStream {
 	}
 
 	public CharacterStream (String source, int start, int end) {
+		if (start > end) throw new IllegalArgumentException("Start must be <= end.");
+		if (start < 0) throw new IndexOutOfBoundsException("Start must be >= 0.");
+		if (start > source.length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
+		if (end > source.length()) throw new IndexOutOfBoundsException("End outside of string.");
+
 		this.source = source;
 		this.index = start;
 		this.end = end;
@@ -41,7 +47,7 @@ public class CharacterStream {
 		return true;
 	}
 
-	public boolean matchDigit(boolean consume) {
+	public boolean matchDigit (boolean consume) {
 		if (index >= end) return false;
 		char c = source.charAt(index);
 		if (Character.isDigit(c)) {
@@ -71,7 +77,7 @@ public class CharacterStream {
 		return false;
 	}
 
-	public void skipWhiteSpace() {
+	public void skipWhiteSpace () {
 		while (true) {
 			if (index >= end) return;
 			char c = source.charAt(index);

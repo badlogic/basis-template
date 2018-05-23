@@ -1,35 +1,62 @@
+
 package io.marioslab.basis.template;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.util.List;
 
 import org.junit.Test;
 
-import io.marioslab.basis.template.parsing.Span;
-import io.marioslab.basis.template.parsing.TemplateParser;
-import io.marioslab.basis.template.parsing.TemplateParser.TextNode;
 import io.marioslab.basis.template.parsing.Token;
 import io.marioslab.basis.template.parsing.TokenType;
+import io.marioslab.basis.template.parsing.Tokenizer;
 
-public class TemplateParserTest {
+public class TokenizerTest {
 	@Test
-	public void testEmptySource () {
-		Template template = new TemplateParser().parse("");
-		assertEquals("Empty source produced non-empty template", 0, template.getNodes().size());
+	public void testEmptysegment () {
+		List<Token> tokens = new Tokenizer().tokenize("");
+		assertEquals("Tokens are not empty", 0, tokens.size());
 	}
 
 	@Test
-	public void testTextNodeOnly () {
-		Template template = new TemplateParser().parse("This is a text node");
-		assertEquals("Expected a single text node", 1, template.getNodes().size());
-		assertEquals("Expected a single text node", TextNode.class, template.getNodes().get(0).getClass());
-		assertEquals("This is a text node", template.getNodes().get(0).getSpan().getText());
+	public void testNoTemplateTemplateSegment () {
+		List<Token> tokens = new Tokenizer().tokenize("this is a test");
+		assertEquals("Expected one text block token", 1, tokens.size());
+		assertEquals("Expected one text block token", "this is a test", tokens.get(0).getText());
+	}
+
+	@Test
+	public void testOnlyTemplateTemplateSegment () {
+		List<Token> tokens = new Tokenizer().tokenize("{{ identifier }}");
+		assertEquals("Expected one identifier token", 1, tokens.size());
+		assertEquals("Expected one identifier token", "identifier", tokens.get(0).getText());
+	}
+
+	@Test
+	public void testMixedTokens () {
+		List<Token> tokens = new Tokenizer().tokenize("{{ identifier }} and a different segment {{identifier2}} fin.");
+		assertEquals("Expected one template token", 4, tokens.size());
+		assertEquals("identifier", tokens.get(0).getText());
+		assertEquals(" and a different segment ", tokens.get(1).getText());
+		assertEquals("identifier2", tokens.get(2).getText());
+		assertEquals(" fin.", tokens.get(3).getText());
+	}
+
+	@Test
+	public void testMissingClosingTag () {
+		try {
+			new Tokenizer().tokenize("{{ this lacks a closing tag");
+			fail("Missing closing tag not detected");
+		} catch (RuntimeException t) {
+			// expected.
+		}
 	}
 
 	@Test
 	public void testTokenizer () {
-		List<Token> tokens = TemplateParser.tokenize(new Span("{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; }}"));
+		List<Token> tokens = new Tokenizer().tokenize(
+			"{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; }}");
 		assertEquals("Expected 23 tokens", 28, tokens.size());
 		assertEquals(TokenType.Period, tokens.get(0).getType());
 		assertEquals(TokenType.Plus, tokens.get(1).getType());
@@ -67,10 +94,5 @@ public class TemplateParserTest {
 		assertEquals("$id", tokens.get(25).getText());
 		assertEquals(TokenType.Comma, tokens.get(26).getType());
 		assertEquals(TokenType.Semicolon, tokens.get(27).getType());
-	}
-
-	@Test
-	public void testEmptyNode () {
-		assertEquals("Expected 0 nodes", 0, new TemplateParser().parse("{{ }}").getNodes().size());
 	}
 }
