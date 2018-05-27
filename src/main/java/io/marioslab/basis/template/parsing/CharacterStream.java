@@ -4,10 +4,11 @@ package io.marioslab.basis.template.parsing;
 /** Wraps a source string and handles traversing the contained characters. Manages a current {@link Span} via the
  * {@link #startSpan()} and {@link #endSpan()} methods. */
 public class CharacterStream {
-	private Span span;
 	private final String source;
 	private int index = 0;
 	private final int end;
+
+	private int spanStart = 0;
 
 	public CharacterStream (String source) {
 		this(source, 0, source.length());
@@ -91,19 +92,15 @@ public class CharacterStream {
 	}
 
 	public void startSpan () {
-		span = new Span(source);
-		span.start = index;
+		spanStart = index;
 	}
 
 	public Span endSpan () {
-		Span span = this.span;
-		span.end = this.index;
-		this.span = null;
-		return span;
+		return new Span(source, spanStart, index);
 	}
 
 	public boolean isSpanEmpty () {
-		return span.start == this.index;
+		return spanStart == this.index;
 	}
 
 	public int getIndex () {

@@ -3,7 +3,6 @@ package io.marioslab.basis.template.parsing;
 
 import java.util.ArrayList;
 import java.util.List;
-import static io.marioslab.basis.template.parsing.Parser.error;
 
 public class Tokenizer {
 
@@ -21,7 +20,7 @@ public class Tokenizer {
 				if (!stream.isSpanEmpty()) tokens.add(new Token(TokenType.TextBlock, stream.endSpan()));
 				stream.startSpan();
 				while (!stream.match("}}", true)) {
-					if (!stream.hasMore()) error("Did not find closing }}.", stream.endSpan());
+					if (!stream.hasMore()) Error.error("Did not find closing }}.", stream.endSpan());
 					stream.next();
 				}
 				tokens.addAll(tokenizeCodeSpan(stream.endSpan()));
@@ -35,12 +34,12 @@ public class Tokenizer {
 	}
 
 	private static List<Token> tokenizeCodeSpan (Span span) {
-		String source = span.source;
-		CharacterStream stream = new CharacterStream(source, span.start, span.end);
+		String source = span.getSource();
+		CharacterStream stream = new CharacterStream(source, span.getStart(), span.getEnd());
 		List<Token> tokens = new ArrayList<Token>();
 
 		// match opening tag and throw it away
-		if (!stream.match("{{", true)) error("Expected {{", new Span(source, stream.getIndex(), stream.getIndex() + 1));
+		if (!stream.match("{{", true)) Error.error("Expected {{", new Span(source, stream.getIndex(), stream.getIndex() + 1));
 
 		outer:
 		while (stream.hasMore()) {
@@ -71,21 +70,27 @@ public class Tokenizer {
 					}
 					stream.next();
 				}
-				if (!matchedEndQuote) error("String literal is not closed by double quote", stream.endSpan());
+				if (!matchedEndQuote) Error.error("String literal is not closed by double quote", stream.endSpan());
 				Span stringSpan = stream.endSpan();
-				stringSpan.start--;
+				stringSpan = new Span(stringSpan.getSource(), stringSpan.getStart() - 1, stringSpan.getEnd());
 				tokens.add(new Token(TokenType.StringLiteral, stringSpan));
 				continue;
 			}
 
-			// Identifiers
+			// Identifier, keyword, or boolean literal
 			if (stream.matchIdentifierStart(true)) {
 				stream.startSpan();
 				while (stream.matchIdentifierPart(true))
 					;
 				Span identifierSpan = stream.endSpan();
-				identifierSpan.start--;
-				tokens.add(new Token(TokenType.Identifier, identifierSpan));
+				identifierSpan = new Span(identifierSpan.getSource(), identifierSpan.getStart() - 1, identifierSpan.getEnd());
+
+				// Boolean literal
+				if (identifierSpan.getText().equals("true") || identifierSpan.getText().equals("false")) {
+					tokens.add(new Token(TokenType.BooleanLiteral, identifierSpan));
+				} else {
+					tokens.add(new Token(TokenType.Identifier, identifierSpan));
+				}
 				continue;
 			}
 
@@ -102,11 +107,11 @@ public class Tokenizer {
 			// match closing tag
 			if (stream.match("}}", false)) break;
 
-			error("Unknown token", new Span(source, stream.getIndex(), stream.getIndex() + 1));
+			Error.error("Unknown token", new Span(source, stream.getIndex(), stream.getIndex() + 1));
 		}
 
 		// just another sanity check
-		if (!stream.match("}}", true)) error("Expected }}", new Span(source, stream.getIndex(), stream.getIndex() + 1));
+		if (!stream.match("}}", true)) Error.error("Expected }}", new Span(source, stream.getIndex(), stream.getIndex() + 1));
 		return tokens;
 	}
 }

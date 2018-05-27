@@ -62,7 +62,7 @@ public class TokenizerTest {
 		assertEquals(TokenType.Plus, tokens.get(1).getType());
 		assertEquals(TokenType.Minus, tokens.get(2).getType());
 		assertEquals(TokenType.Asterisk, tokens.get(3).getType());
-		assertEquals(TokenType.Division, tokens.get(4).getType());
+		assertEquals(TokenType.ForwardSlash, tokens.get(4).getType());
 		assertEquals(TokenType.LeftParantheses, tokens.get(5).getType());
 		assertEquals(TokenType.RightParantheses, tokens.get(6).getType());
 		assertEquals(TokenType.LeftBracket, tokens.get(7).getType());
