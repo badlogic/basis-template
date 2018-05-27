@@ -14,6 +14,11 @@ public abstract class Ast {
 		public Span getSpan () {
 			return span;
 		}
+
+		@Override
+		public String toString () {
+			return span.getText();
+		}
 	}
 
 	public static class TextNode extends Node {
@@ -46,7 +51,7 @@ public abstract class Ast {
 		private final ExpressionNode operand;
 
 		public UnaryOperation (Token operator, ExpressionNode operand) {
-			super(new Span(operator.getSpan(), operand.getSpan()));
+			super(operator.getSpan());
 			this.operator = UnaryOperator.getOperator(operator);
 			this.operand = operand;
 		}
@@ -88,7 +93,7 @@ public abstract class Ast {
 		private final ExpressionNode rightOperand;
 
 		public BinaryOperation (ExpressionNode leftOperand, Token operator, ExpressionNode rightOperand) {
-			super(new Span(leftOperand.getSpan(), rightOperand.getSpan()));
+			super(operator.getSpan());
 			this.leftOperand = leftOperand;
 			this.operator = BinaryOperator.getOperator(operator);
 			this.rightOperand = rightOperand;
@@ -197,12 +202,12 @@ public abstract class Ast {
 		}
 	}
 
-	public static class FieldOrMethodAccess extends ExpressionNode {
+	public static class MemberAccess extends ExpressionNode {
 		private final ExpressionNode object;
 		private final Span name;
 
-		public FieldOrMethodAccess (ExpressionNode object, Span name) {
-			super(new Span(object.getSpan(), name));
+		public MemberAccess (ExpressionNode object, Span name) {
+			super(name);
 			this.object = object;
 			this.name = name;
 		}
@@ -211,7 +216,7 @@ public abstract class Ast {
 			return object;
 		}
 
-		public Span getFieldOrMethodName () {
+		public Span getName () {
 			return name;
 		}
 	}
@@ -236,10 +241,10 @@ public abstract class Ast {
 	}
 
 	public static class MethodCall extends ExpressionNode {
-		private final FieldOrMethodAccess method;
+		private final MemberAccess method;
 		private final List<ExpressionNode> arguments;
 
-		public MethodCall (FieldOrMethodAccess method, List<ExpressionNode> arguments, Span closingParanthesis) {
+		public MethodCall (MemberAccess method, List<ExpressionNode> arguments, Span closingParanthesis) {
 			super(new Span(method.getSpan(), closingParanthesis));
 			this.method = method;
 			this.arguments = arguments;
@@ -249,7 +254,7 @@ public abstract class Ast {
 			return method.getObject();
 		}
 
-		public FieldOrMethodAccess getMethodName () {
+		public MemberAccess getMethod () {
 			return method;
 		}
 

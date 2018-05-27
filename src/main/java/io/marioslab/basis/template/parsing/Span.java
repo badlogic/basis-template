@@ -58,4 +58,10 @@ public class Span {
 	public String getSource () {
 		return source;
 	}
+
+	@Override
+	public String toString () {
+		return "Span [text=" + getText() + ", start=" + start + ", end=" + end + "]";
+	}
+
 }

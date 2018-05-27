@@ -8,7 +8,7 @@ import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
 import io.marioslab.basis.template.parsing.Ast.ExpressionNode;
-import io.marioslab.basis.template.parsing.Ast.FieldOrMethodAccess;
+import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
@@ -45,7 +45,6 @@ public class Parser {
 
 	private void parseIfStatement (TokenStream stream, List<Node> nodes) {
 		stream.expect("if");
-
 	}
 
 	private void parseForStatement (TokenStream stream, List<Node> nodes) {
@@ -129,8 +128,8 @@ public class Parser {
 				Span closingSpan = stream.expect(TokenType.RightParantheses).getSpan();
 				if (result instanceof VariableAccess || result instanceof MapOrArrayAccess)
 					result = new FunctionCall(result, arguments, closingSpan);
-				else if (result instanceof FieldOrMethodAccess) {
-					result = new MethodCall((FieldOrMethodAccess)result, arguments, closingSpan);
+				else if (result instanceof MemberAccess) {
+					result = new MethodCall((MemberAccess)result, arguments, closingSpan);
 				} else {
 					Error.error("Expected a variable or field/method access", stream);
 				}
@@ -146,7 +145,7 @@ public class Parser {
 			// field or method access
 			else if (stream.match(TokenType.Period, true)) {
 				identifier = stream.expect(TokenType.Identifier).getSpan();
-				result = new FieldOrMethodAccess(result, identifier);
+				result = new MemberAccess(result, identifier);
 			}
 		}
 

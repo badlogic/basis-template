@@ -6,7 +6,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
-import io.marioslab.basis.template.parsing.Ast.FieldOrMethodAccess;
+import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
@@ -77,7 +77,7 @@ public class ParserTest {
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected FunctionCall node", FunctionCall.class, template.getNodes().get(0).getClass());
 		FunctionCall call = (FunctionCall)template.getNodes().get(0);
-		assertEquals("Expected function name to be foo", "foo", ((VariableAccess)call.getFunction()).getVariableName());
+		assertEquals("Expected function name to be foo", "foo", ((VariableAccess)call.getFunction()).getVariableName().getText());
 		assertEquals("Expected 0 arguments", 0, call.getArguments().size());
 	}
 
@@ -105,15 +105,15 @@ public class ParserTest {
 	}
 
 	@Test
-	public void testFieldAccess () {
+	public void testMemberAccess () {
 		Template template = new Parser().parse("{{foo.field}}");
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
-		assertEquals("Expected FieldAccess node", FieldOrMethodAccess.class, template.getNodes().get(0).getClass());
-		FieldOrMethodAccess fieldAccess = (FieldOrMethodAccess)template.getNodes().get(0);
+		assertEquals("Expected MemberAccess node", MemberAccess.class, template.getNodes().get(0).getClass());
+		MemberAccess fieldAccess = (MemberAccess)template.getNodes().get(0);
 		assertEquals(VariableAccess.class, fieldAccess.getObject().getClass());
 		VariableAccess object = (VariableAccess)fieldAccess.getObject();
 		assertEquals("foo", object.getVariableName().getText());
-		assertEquals("field", fieldAccess.getFieldOrMethodName().getText());
+		assertEquals("field", fieldAccess.getName().getText());
 	}
 
 	@Test
@@ -125,7 +125,7 @@ public class ParserTest {
 		assertEquals(VariableAccess.class, methodCall.getObject().getClass());
 		VariableAccess object = (VariableAccess)methodCall.getObject();
 		assertEquals("foo", object.getVariableName().getText());
-		assertEquals("method", methodCall.getMethodName().getFieldOrMethodName());
+		assertEquals("method", methodCall.getMethod().getName().getText());
 		assertEquals(0, methodCall.getArguments().size());
 	}
 
@@ -138,7 +138,22 @@ public class ParserTest {
 		assertEquals(VariableAccess.class, methodCall.getObject().getClass());
 		VariableAccess object = (VariableAccess)methodCall.getObject();
 		assertEquals("foo", object.getVariableName().getText());
-		assertEquals("method", methodCall.getMethodName().getFieldOrMethodName());
+		assertEquals("method", methodCall.getMethod().getName().getText());
 		assertEquals(3, methodCall.getArguments().size());
+	}
+
+	@Test
+	public void testChainAccess () {
+		Template template = new Parser().parse("{{foo.bar[0]()[0]().method(a, b, c).field}}");
+		assertEquals("Expected 1 node", 1, template.getNodes().size());
+		assertEquals("Expected  node", MemberAccess.class, template.getNodes().get(0).getClass());
+		MemberAccess fieldAccess = (MemberAccess)template.getNodes().get(0);
+		MethodCall methodCall = (MethodCall)fieldAccess.getObject();
+		FunctionCall functionCall = (FunctionCall)methodCall.getObject();
+		MapOrArrayAccess arrayAccess = (MapOrArrayAccess)functionCall.getFunction();
+		FunctionCall functionCall2 = (FunctionCall)arrayAccess.getMapOrArray();
+		MapOrArrayAccess arrayAccess2 = (MapOrArrayAccess)functionCall2.getFunction();
+		MemberAccess fieldAccess2 = (MemberAccess)arrayAccess2.getMapOrArray();
+		VariableAccess variableAccess = (VariableAccess)fieldAccess2.getObject();
 	}
 }
