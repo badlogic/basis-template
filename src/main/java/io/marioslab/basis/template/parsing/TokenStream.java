@@ -23,7 +23,7 @@ public class TokenStream {
 
 	/** Consumes the next token and returns it. **/
 	public Token consume () {
-		if (!hasMore()) throw new RuntimeException("No more tokens in stream.");
+		if (!hasMore()) throw new RuntimeException("Reached the end of the source.");
 		return tokens.get(index++);
 	}
 
@@ -35,9 +35,9 @@ public class TokenStream {
 			Token token = index < tokens.size() ? tokens.get(index) : null;
 			Span span = token != null ? token.getSpan() : null;
 			if (span == null)
-				Error.error("Expected token of type " + type + ", but there are no more tokens.", this);
+				Error.error("Expected " + type.error + ", but reached the end of the source.", this);
 			else
-				Error.error("Expected token of type " + type + ", but got \"" + token.getText() + "\"", span);
+				Error.error("Expected " + type.error + ", but got \"" + token.getText() + "\"", span);
 			return null; // never reached
 		} else {
 			return tokens.get(index - 1);
@@ -52,9 +52,9 @@ public class TokenStream {
 			Token token = index < tokens.size() ? tokens.get(index) : null;
 			Span span = token != null ? token.getSpan() : null;
 			if (span == null)
-				Error.error("Expected token \"" + text + "\", but there are no more tokens.", this);
+				Error.error("Expected \"" + text + "\", but reached the end of the source.", this);
 			else
-				Error.error("Expected token \"" + text + "\", but got \"" + token.getText() + "\"", span);
+				Error.error("Expected \"" + text + "\", but got \"" + token.getText() + "\"", span);
 			return null; // never reached
 		} else {
 			return tokens.get(index - 1);
@@ -86,6 +86,15 @@ public class TokenStream {
 	public boolean match (boolean consume, TokenType... types) {
 		for (TokenType type : types) {
 			if (match(type, consume)) return true;
+		}
+		return false;
+	}
+
+	/** Matches any of the token texts and optionally consumes the next token in case of a match. Returns whether the token
+	 * matched. */
+	public boolean match (boolean consume, String... tokenTexts) {
+		for (String text : tokenTexts) {
+			if (match(text, consume)) return true;
 		}
 		return false;
 	}

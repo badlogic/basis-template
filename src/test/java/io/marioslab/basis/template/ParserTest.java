@@ -2,27 +2,39 @@
 package io.marioslab.basis.template;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
 
 import org.junit.Test;
 
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation.BinaryOperator;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
-import io.marioslab.basis.template.parsing.Ast.MemberAccess;
+import io.marioslab.basis.template.parsing.Ast.Expression;
+import io.marioslab.basis.template.parsing.Ast.ForStatement;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
+import io.marioslab.basis.template.parsing.Ast.IfStatement;
+import io.marioslab.basis.template.parsing.Ast.Include;
+import io.marioslab.basis.template.parsing.Ast.Macro;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
+import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
 import io.marioslab.basis.template.parsing.Ast.NumberLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
-import io.marioslab.basis.template.parsing.Ast.TextNode;
+import io.marioslab.basis.template.parsing.Ast.Text;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation.UnaryOperator;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
+import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 import io.marioslab.basis.template.parsing.Parser;
+import io.marioslab.basis.template.parsing.Span;
 
 public class ParserTest {
 	@Test
@@ -35,7 +47,7 @@ public class ParserTest {
 	public void testTextNodeOnly () {
 		Template template = new Parser().parse("This is a text node");
 		assertEquals("Expected a single text node", 1, template.getNodes().size());
-		assertEquals("Expected a single text node", TextNode.class, template.getNodes().get(0).getClass());
+		assertEquals("Expected a single text node", Text.class, template.getNodes().get(0).getClass());
 		assertEquals("This is a text node", template.getNodes().get(0).getSpan().getText());
 	}
 
@@ -163,6 +175,7 @@ public class ParserTest {
 		MapOrArrayAccess arrayAccess2 = (MapOrArrayAccess)functionCall2.getFunction();
 		MemberAccess fieldAccess2 = (MemberAccess)arrayAccess2.getMapOrArray();
 		VariableAccess variableAccess = (VariableAccess)fieldAccess2.getObject();
+		assertEquals("foo", variableAccess.getVariableName().getText());
 	}
 
 	@Test
@@ -309,5 +322,142 @@ public class ParserTest {
 		assertEquals("bar", memberAccess.getName().getText());
 		VariableAccess variableAccess = (VariableAccess)memberAccess.getObject();
 		assertEquals("foo", variableAccess.getVariableName().getText());
+	}
+
+	@Test
+	public void testIfStatement () {
+		List<Node> nodes = new Parser().parse("{{ if true }} true body {{ end }}").getNodes();
+		assertEquals(1, nodes.size());
+		IfStatement ifStmt = (IfStatement)nodes.get(0);
+		assertEquals(BooleanLiteral.class, ifStmt.getCondition().getClass());
+		assertEquals(1, ifStmt.getTrueBlock().size());
+		assertEquals(Text.class, ifStmt.getTrueBlock().get(0).getClass());
+		assertEquals(0, ifStmt.getElseIfs().size());
+		assertEquals(0, ifStmt.getFalseBlock().size());
+
+		nodes = new Parser().parse("{{ if true }} true body {{ else }} false body {{ end }}").getNodes();
+		assertEquals(1, nodes.size());
+		ifStmt = (IfStatement)nodes.get(0);
+		assertEquals(BooleanLiteral.class, ifStmt.getCondition().getClass());
+		assertEquals(1, ifStmt.getTrueBlock().size());
+		assertEquals(Text.class, ifStmt.getTrueBlock().get(0).getClass());
+		assertEquals(0, ifStmt.getElseIfs().size());
+		assertEquals(1, ifStmt.getFalseBlock().size());
+		assertEquals(Text.class, ifStmt.getFalseBlock().get(0).getClass());
+
+		nodes = new Parser().parse("{{ if true }} true {{ if false }} innerTrue {{ else }} innerFalse {{end }} body {{ else }} false body {{ end }}").getNodes();
+		assertEquals(1, nodes.size());
+		ifStmt = (IfStatement)nodes.get(0);
+		assertEquals(BooleanLiteral.class, ifStmt.getCondition().getClass());
+		assertEquals(3, ifStmt.getTrueBlock().size());
+		assertEquals(Text.class, ifStmt.getTrueBlock().get(0).getClass());
+		assertEquals(Text.class, ifStmt.getTrueBlock().get(2).getClass());
+		IfStatement innerIf = (IfStatement)ifStmt.getTrueBlock().get(1);
+		assertEquals(1, innerIf.getTrueBlock().size());
+		assertEquals(Text.class, innerIf.getTrueBlock().get(0).getClass());
+		assertEquals(1, innerIf.getFalseBlock().size());
+		assertEquals(Text.class, innerIf.getFalseBlock().get(0).getClass());
+
+		assertEquals(1, ifStmt.getFalseBlock().size());
+		assertEquals(Text.class, ifStmt.getFalseBlock().get(0).getClass());
+
+		nodes = new Parser().parse("{{ if true }} one {{ elseif false }} two {{ elseif false }} three {{ else }} four {{ end }}").getNodes();
+		assertEquals(1, nodes.size());
+		ifStmt = (IfStatement)nodes.get(0);
+		assertEquals(2, ifStmt.getElseIfs().size());
+		assertEquals(1, ifStmt.getElseIfs().get(0).getTrueBlock().size());
+		assertEquals(0, ifStmt.getElseIfs().get(0).getElseIfs().size());
+		assertEquals(0, ifStmt.getElseIfs().get(0).getFalseBlock().size());
+		assertEquals(1, ifStmt.getElseIfs().get(1).getTrueBlock().size());
+		assertEquals(0, ifStmt.getElseIfs().get(1).getElseIfs().size());
+		assertEquals(0, ifStmt.getElseIfs().get(1).getFalseBlock().size());
+	}
+
+	@Test
+	public void testForStatement () {
+		List<Node> nodes = new Parser().parse("{{ for x in y }} true body {{expr}} {{ end }}").getNodes();
+		assertEquals(1, nodes.size());
+		ForStatement forStmt = (ForStatement)nodes.get(0);
+		assertNull(forStmt.getIndexOrKeyName());
+		assertEquals("x", forStmt.getValueName().getText());
+		assertEquals(VariableAccess.class, forStmt.getMapOrArray().getClass());
+		assertEquals(3, forStmt.getBody().size());
+		assertEquals(Text.class, forStmt.getBody().get(0).getClass());
+		assertEquals(VariableAccess.class, forStmt.getBody().get(1).getClass());
+		assertEquals(Text.class, forStmt.getBody().get(2).getClass());
+	}
+
+	@Test
+	public void testWhileStatement () {
+		List<Node> nodes = new Parser().parse("{{ while true }} true body {{expr}} {{ end }}").getNodes();
+		assertEquals(1, nodes.size());
+		WhileStatement whileStmt = (WhileStatement)nodes.get(0);
+		assertEquals(BooleanLiteral.class, whileStmt.getCondition().getClass());
+		assertEquals(3, whileStmt.getBody().size());
+		assertEquals(Text.class, whileStmt.getBody().get(0).getClass());
+		assertEquals(VariableAccess.class, whileStmt.getBody().get(1).getClass());
+		assertEquals(Text.class, whileStmt.getBody().get(2).getClass());
+	}
+
+	@Test
+	public void testMacro () {
+		Template template = new Parser().parse("{{ macro myMacro(a, b, c) }} true body {{expr}} {{ end }}");
+		List<Node> nodes = template.getNodes();
+		List<Macro> macros = template.getMacros();
+
+		assertEquals(1, nodes.size());
+		Macro macro = (Macro)nodes.get(0);
+		assertEquals(3, macro.getArgumentNames().size());
+		assertEquals("a", macro.getArgumentNames().get(0).getText());
+		assertEquals("b", macro.getArgumentNames().get(1).getText());
+		assertEquals("c", macro.getArgumentNames().get(2).getText());
+
+		assertEquals(3, macro.getBody().size());
+		assertEquals(Text.class, macro.getBody().get(0).getClass());
+		assertEquals(VariableAccess.class, macro.getBody().get(1).getClass());
+		assertEquals(Text.class, macro.getBody().get(2).getClass());
+
+		assertEquals(1, macros.size());
+		macro = macros.get(0);
+		assertEquals(3, macro.getArgumentNames().size());
+		assertEquals("a", macro.getArgumentNames().get(0).getText());
+		assertEquals("b", macro.getArgumentNames().get(1).getText());
+		assertEquals("c", macro.getArgumentNames().get(2).getText());
+
+		assertEquals(3, macro.getBody().size());
+		assertEquals(Text.class, macro.getBody().get(0).getClass());
+		assertEquals(VariableAccess.class, macro.getBody().get(1).getClass());
+		assertEquals(Text.class, macro.getBody().get(2).getClass());
+
+		try {
+			new Parser().parse("{{if true}} {{ macro myMacro() }} test {{end}} {{end}}");
+			assertTrue("Macros are only allowed at the top level.", false);
+		} catch (Throwable t) {
+			// expected state
+		}
+	}
+
+	@Test
+	public void testInclude () {
+		List<Node> nodes = new Parser().parse("{{ include \"othertemplate.html\" with ( key1: 1 * 2 + 3, key2: \"test\" ) }}").getNodes();
+		assertEquals(1, nodes.size());
+
+		Include inc = (Include)nodes.get(0);
+		assertEquals("\"othertemplate.html\"", inc.getPath().getText());
+		assertEquals(2, inc.getContext().size());
+		Set<String> keys = new HashSet<String>();
+		keys.add("key1");
+		keys.add("key2");
+		for (Entry<Span, Expression> entry : inc.getContext().entrySet()) {
+			assertTrue(keys.size() > 0);
+			if (entry.getKey().getText().equals("key1")) {
+				keys.remove("key1");
+				assertEquals(BinaryOperation.class, entry.getValue().getClass());
+			} else if (entry.getKey().getText().equals("key2")) {
+				keys.remove("key2");
+				assertEquals(StringLiteral.class, entry.getValue().getClass());
+			}
+		}
+		assertEquals(0, keys.size());
 	}
 }

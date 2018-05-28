@@ -6,36 +6,38 @@ import java.util.Comparator;
 
 public enum TokenType {
 	// @off
-	TextBlock,
-	Period("."),
-	Comma(","),
-	Semicolon(";"),
-	Colon(":"),
-	Plus("+"),
-	Minus("-"),
-	Asterisk("*"),
-	ForwardSlash("/"),
-	Percentage("%"),
-	LeftParantheses("("),
-	RightParantheses(")"),
-	LeftBracket("["),
-	RightBracket("]"),
-	Less("<"),
-	Greater(">"),
-	LessEqual("<="),
-	GreaterEqual(">="),
-	Equal("=="),
-	NotEqual("!="),
-	Assignment("="),
-	And("&&"),
-	Or("||"),
-	Not("!"),
-	Questionmark("?"),
-	DoubleQuote("\""),
-	BooleanLiteral,
-	NumberLiteral,
-	StringLiteral,
-	Identifier;
+	TextBlock("a text block"),
+	Period(".", "."),
+	Comma(",", ","),
+	Semicolon(";", ";"),
+	Colon(":", ":"),
+	Plus("+", "+"),
+	Minus("-", "-"),
+	Asterisk("*", "*"),
+	ForwardSlash("/", "/"),
+	Percentage("%", "%"),
+	LeftParantheses("(", ")"),
+	RightParantheses(")", ")"),
+	LeftBracket("[", "["),
+	RightBracket("]", "]"),
+	LeftCurly("{", "{"),
+	RightCurly("}"), // special treatment!
+	Less("<", "<"),
+	Greater(">", ">"),
+	LessEqual("<=", "<="),
+	GreaterEqual(">=", ">="),
+	Equal("==", "=="),
+	NotEqual("!=", "!="),
+	Assignment("=", "="),
+	And("&&", "&&"),
+	Or("||", "||"),
+	Not("!", "!"),
+	Questionmark("?", "?"),
+	DoubleQuote("\"", "\""),
+	BooleanLiteral("true or false"),
+	NumberLiteral("a number"),
+	StringLiteral("a string"),
+	Identifier("an identifier");
 	// @on
 
 	private static TokenType[] values;
@@ -54,13 +56,16 @@ public enum TokenType {
 	}
 
 	final String literal;
+	final String error;
 
-	TokenType () {
+	TokenType (String error) {
 		this.literal = null;
+		this.error = error;
 	}
 
-	TokenType (String literal) {
+	TokenType (String literal, String error) {
 		this.literal = literal;
+		this.error = error;
 	}
 
 	public String getLiteral () {

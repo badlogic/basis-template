@@ -7,7 +7,10 @@ public class Error {
 			error(message, stream.consume().getSpan());
 		else {
 			String source = stream.getSource();
-			if (source == null) error(message, new Span(" ", 0, 1));
+			if (source == null)
+				error(message, new Span(" ", 0, 1));
+			else
+				error(message, new Span(source, source.length() - 1, source.length()));
 		}
 	}
 

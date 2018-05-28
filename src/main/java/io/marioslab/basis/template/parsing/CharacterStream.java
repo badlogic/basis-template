@@ -30,8 +30,14 @@ public class CharacterStream {
 		return index < end;
 	}
 
+	/** @return the next character without advancing the stream **/
+	public char peek () {
+		if (!hasMore()) throw new RuntimeException("No more characters in stream.");
+		return source.charAt(index++);
+	}
+
 	/** @return the next character and advance the stream **/
-	public char next () {
+	public char consume () {
 		if (!hasMore()) throw new RuntimeException("No more characters in stream.");
 		return source.charAt(index++);
 	}

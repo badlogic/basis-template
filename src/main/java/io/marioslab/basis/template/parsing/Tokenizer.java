@@ -21,12 +21,12 @@ public class Tokenizer {
 				stream.startSpan();
 				while (!stream.match("}}", true)) {
 					if (!stream.hasMore()) Error.error("Did not find closing }}.", stream.endSpan());
-					stream.next();
+					stream.consume();
 				}
 				tokens.addAll(tokenizeCodeSpan(stream.endSpan()));
 				stream.startSpan();
 			} else {
-				stream.next();
+				stream.consume();
 			}
 		}
 		if (!stream.isSpanEmpty()) tokens.add(new Token(TokenType.TextBlock, stream.endSpan()));
@@ -68,7 +68,7 @@ public class Tokenizer {
 						matchedEndQuote = true;
 						break;
 					}
-					stream.next();
+					stream.consume();
 				}
 				if (!matchedEndQuote) Error.error("String literal is not closed by double quote", stream.endSpan());
 				Span stringSpan = stream.endSpan();

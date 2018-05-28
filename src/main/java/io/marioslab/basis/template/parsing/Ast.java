@@ -2,6 +2,7 @@
 package io.marioslab.basis.template.parsing;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class Ast {
 	public static class Node {
@@ -21,19 +22,19 @@ public abstract class Ast {
 		}
 	}
 
-	public static class TextNode extends Node {
-		public TextNode (Span span) {
+	public static class Text extends Node {
+		public Text (Span text) {
+			super(text);
+		}
+	}
+
+	public abstract static class Expression extends Node {
+		public Expression (Span span) {
 			super(span);
 		}
 	}
 
-	public abstract static class ExpressionNode extends Node {
-		public ExpressionNode (Span span) {
-			super(span);
-		}
-	}
-
-	public static class UnaryOperation extends ExpressionNode {
+	public static class UnaryOperation extends Expression {
 
 		public static enum UnaryOperator {
 			Not, Negate, Positive;
@@ -48,9 +49,9 @@ public abstract class Ast {
 		}
 
 		private final UnaryOperator operator;
-		private final ExpressionNode operand;
+		private final Expression operand;
 
-		public UnaryOperation (Token operator, ExpressionNode operand) {
+		public UnaryOperation (Token operator, Expression operand) {
 			super(operator.getSpan());
 			this.operator = UnaryOperator.getOperator(operator);
 			this.operand = operand;
@@ -60,12 +61,12 @@ public abstract class Ast {
 			return operator;
 		}
 
-		public ExpressionNode getOperand () {
+		public Expression getOperand () {
 			return operand;
 		}
 	}
 
-	public static class BinaryOperation extends ExpressionNode {
+	public static class BinaryOperation extends Expression {
 
 		public static enum BinaryOperator {
 			Addition, Subtraction, Multiplication, Division, Modulo, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, And, Or;
@@ -89,18 +90,18 @@ public abstract class Ast {
 			}
 		}
 
-		private final ExpressionNode leftOperand;
+		private final Expression leftOperand;
 		private final BinaryOperator operator;
-		private final ExpressionNode rightOperand;
+		private final Expression rightOperand;
 
-		public BinaryOperation (ExpressionNode leftOperand, Token operator, ExpressionNode rightOperand) {
+		public BinaryOperation (Expression leftOperand, Token operator, Expression rightOperand) {
 			super(operator.getSpan());
 			this.leftOperand = leftOperand;
 			this.operator = BinaryOperator.getOperator(operator);
 			this.rightOperand = rightOperand;
 		}
 
-		public ExpressionNode getLeftOperand () {
+		public Expression getLeftOperand () {
 			return leftOperand;
 		}
 
@@ -108,39 +109,39 @@ public abstract class Ast {
 			return operator;
 		}
 
-		public ExpressionNode getRightOperand () {
+		public Expression getRightOperand () {
 			return rightOperand;
 		}
 	}
 
-	public static class TernaryOperation extends ExpressionNode {
-		private final ExpressionNode condition;
-		private final ExpressionNode trueExpression;
-		private final ExpressionNode falseExpression;
+	public static class TernaryOperation extends Expression {
+		private final Expression condition;
+		private final Expression trueExpression;
+		private final Expression falseExpression;
 
-		public TernaryOperation (ExpressionNode condition, ExpressionNode trueExpression, ExpressionNode falseExpression) {
+		public TernaryOperation (Expression condition, Expression trueExpression, Expression falseExpression) {
 			super(new Span(condition.getSpan(), falseExpression.getSpan()));
 			this.condition = condition;
 			this.trueExpression = trueExpression;
 			this.falseExpression = falseExpression;
 		}
 
-		public ExpressionNode getCondition () {
+		public Expression getCondition () {
 			return condition;
 		}
 
-		public ExpressionNode getTrueExpression () {
+		public Expression getTrueExpression () {
 			return trueExpression;
 		}
 
-		public ExpressionNode getFalseExpression () {
+		public Expression getFalseExpression () {
 			return falseExpression;
 		}
 	}
 
-	public static class StringLiteral extends ExpressionNode {
-		public StringLiteral (Span span) {
-			super(span);
+	public static class StringLiteral extends Expression {
+		public StringLiteral (Span literal) {
+			super(literal);
 		}
 
 		public String getRawValue () {
@@ -148,12 +149,12 @@ public abstract class Ast {
 		}
 	}
 
-	public static class NumberLiteral extends ExpressionNode {
+	public static class NumberLiteral extends Expression {
 		private final double value;
 
-		public NumberLiteral (Span span) {
-			super(span);
-			this.value = Double.parseDouble(span.getText());
+		public NumberLiteral (Span literal) {
+			super(literal);
+			this.value = Double.parseDouble(literal.getText());
 		}
 
 		public double getValue () {
@@ -161,12 +162,12 @@ public abstract class Ast {
 		}
 	}
 
-	public static class BooleanLiteral extends ExpressionNode {
+	public static class BooleanLiteral extends Expression {
 		private final boolean value;
 
-		public BooleanLiteral (Span span) {
-			super(span);
-			this.value = Boolean.parseBoolean(span.getText());
+		public BooleanLiteral (Span literal) {
+			super(literal);
+			this.value = Boolean.parseBoolean(literal.getText());
 		}
 
 		public boolean getValue () {
@@ -174,9 +175,9 @@ public abstract class Ast {
 		}
 	}
 
-	public static class VariableAccess extends ExpressionNode {
-		public VariableAccess (Span span) {
-			super(span);
+	public static class VariableAccess extends Expression {
+		public VariableAccess (Span name) {
+			super(name);
 		}
 
 		public Span getVariableName () {
@@ -184,36 +185,36 @@ public abstract class Ast {
 		}
 	}
 
-	public static class MapOrArrayAccess extends ExpressionNode {
-		private final ExpressionNode mapOrArray;
-		private final ExpressionNode keyOrIndex;
+	public static class MapOrArrayAccess extends Expression {
+		private final Expression mapOrArray;
+		private final Expression keyOrIndex;
 
-		public MapOrArrayAccess (ExpressionNode mapOrArray, ExpressionNode keyOrIndex, Span closingBracket) {
-			super(new Span(mapOrArray.getSpan(), closingBracket));
+		public MapOrArrayAccess (Span span, Expression mapOrArray, Expression keyOrIndex) {
+			super(span);
 			this.mapOrArray = mapOrArray;
 			this.keyOrIndex = keyOrIndex;
 		}
 
-		public ExpressionNode getMapOrArray () {
+		public Expression getMapOrArray () {
 			return mapOrArray;
 		}
 
-		public ExpressionNode getKeyOrIndex () {
+		public Expression getKeyOrIndex () {
 			return keyOrIndex;
 		}
 	}
 
-	public static class MemberAccess extends ExpressionNode {
-		private final ExpressionNode object;
+	public static class MemberAccess extends Expression {
+		private final Expression object;
 		private final Span name;
 
-		public MemberAccess (ExpressionNode object, Span name) {
+		public MemberAccess (Expression object, Span name) {
 			super(name);
 			this.object = object;
 			this.name = name;
 		}
 
-		public ExpressionNode getObject () {
+		public Expression getObject () {
 			return object;
 		}
 
@@ -222,36 +223,36 @@ public abstract class Ast {
 		}
 	}
 
-	public static class FunctionCall extends ExpressionNode {
-		private final ExpressionNode function;
-		private final List<ExpressionNode> arguments;
+	public static class FunctionCall extends Expression {
+		private final Expression function;
+		private final List<Expression> arguments;
 
-		public FunctionCall (ExpressionNode function, List<ExpressionNode> arguments, Span closingParanthesis) {
-			super(new Span(function.getSpan(), closingParanthesis));
+		public FunctionCall (Span span, Expression function, List<Expression> arguments) {
+			super(span);
 			this.function = function;
 			this.arguments = arguments;
 		}
 
-		public ExpressionNode getFunction () {
+		public Expression getFunction () {
 			return function;
 		}
 
-		public List<ExpressionNode> getArguments () {
+		public List<Expression> getArguments () {
 			return arguments;
 		}
 	}
 
-	public static class MethodCall extends ExpressionNode {
+	public static class MethodCall extends Expression {
 		private final MemberAccess method;
-		private final List<ExpressionNode> arguments;
+		private final List<Expression> arguments;
 
-		public MethodCall (MemberAccess method, List<ExpressionNode> arguments, Span closingParanthesis) {
-			super(new Span(method.getSpan(), closingParanthesis));
+		public MethodCall (Span span, MemberAccess method, List<Expression> arguments) {
+			super(span);
 			this.method = method;
 			this.arguments = arguments;
 		}
 
-		public ExpressionNode getObject () {
+		public Expression getObject () {
 			return method.getObject();
 		}
 
@@ -259,8 +260,134 @@ public abstract class Ast {
 			return method;
 		}
 
-		public List<ExpressionNode> getArguments () {
+		public List<Expression> getArguments () {
 			return arguments;
+		}
+	}
+
+	public static class IfStatement extends Node {
+		private final Expression condition;
+		private final List<Node> trueBlock;
+		private final List<IfStatement> elseIfs;
+		private final List<Node> falseBlock;
+
+		public IfStatement (Span span, Expression condition, List<Node> trueBlock, List<IfStatement> elseIfs, List<Node> falseBlock) {
+			super(span);
+			this.condition = condition;
+			this.trueBlock = trueBlock;
+			this.elseIfs = elseIfs;
+			this.falseBlock = falseBlock;
+		}
+
+		public Expression getCondition () {
+			return condition;
+		}
+
+		public List<Node> getTrueBlock () {
+			return trueBlock;
+		}
+
+		public List<IfStatement> getElseIfs () {
+			return elseIfs;
+		}
+
+		public List<Node> getFalseBlock () {
+			return falseBlock;
+		}
+	}
+
+	public static class ForStatement extends Node {
+		private final Span indexOrKeyName;
+		private final Span valueName;
+		private final Expression mapOrArray;
+		private final List<Node> body;
+
+		public ForStatement (Span span, Span indexOrKeyName, Span valueName, Expression mapOrArray, List<Node> body) {
+			super(span);
+			this.indexOrKeyName = indexOrKeyName;
+			this.valueName = valueName;
+			this.mapOrArray = mapOrArray;
+			this.body = body;
+		}
+
+		/** May return null **/
+		public Span getIndexOrKeyName () {
+			return indexOrKeyName;
+		}
+
+		public Span getValueName () {
+			return valueName;
+		}
+
+		public Expression getMapOrArray () {
+			return mapOrArray;
+		}
+
+		public List<Node> getBody () {
+			return body;
+		}
+	}
+
+	public static class WhileStatement extends Node {
+		private final Expression condition;
+		private final List<Node> body;
+
+		public WhileStatement (Span span, Expression condition, List<Node> body) {
+			super(span);
+			this.condition = condition;
+			this.body = body;
+		}
+
+		public Expression getCondition () {
+			return condition;
+		}
+
+		public List<Node> getBody () {
+			return body;
+		}
+	}
+
+	public static class Macro extends Node {
+		private final Span name;
+		private final List<Span> argumentNames;
+		private final List<Node> body;
+
+		public Macro (Span span, Span name, List<Span> argumentNames, List<Node> body) {
+			super(span);
+			this.name = name;
+			this.argumentNames = argumentNames;
+			this.body = body;
+		}
+
+		public Span getName () {
+			return name;
+		}
+
+		public List<Span> getArgumentNames () {
+			return argumentNames;
+		}
+
+		public List<Node> getBody () {
+			return body;
+		}
+	}
+
+	public static class Include extends Node {
+		private final Span path;
+		private final Map<Span, Expression> context;
+
+		public Include (Span span, Span path, Map<Span, Expression> context) {
+			super(span);
+			this.path = path;
+			this.context = context;
+		}
+
+		public Span getPath () {
+			return path;
+		}
+
+		public Map<Span, Expression> getContext () {
+			return context;
 		}
 	}
 }
