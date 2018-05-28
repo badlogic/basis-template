@@ -36,12 +36,12 @@ public abstract class Ast {
 	public static class UnaryOperation extends ExpressionNode {
 
 		public static enum UnaryOperator {
-			Not, Negative, Positive;
+			Not, Negate, Positive;
 
 			public static UnaryOperator getOperator (Token op) {
 				if (op.getType() == TokenType.Not) return UnaryOperator.Not;
 				if (op.getType() == TokenType.Plus) return UnaryOperator.Positive;
-				if (op.getType() == TokenType.Minus) return UnaryOperator.Negative;
+				if (op.getType() == TokenType.Minus) return UnaryOperator.Negate;
 				Error.error("Unknown unary operator " + op + ".", op.getSpan());
 				return null; // not reached
 			}
@@ -80,7 +80,8 @@ public abstract class Ast {
 				if (op.getType() == TokenType.NotEqual) return BinaryOperator.NotEqual;
 				if (op.getType() == TokenType.Less) return BinaryOperator.Less;
 				if (op.getType() == TokenType.LessEqual) return BinaryOperator.LessEqual;
-				if (op.getType() == TokenType.Greater) return BinaryOperator.GreaterEqual;
+				if (op.getType() == TokenType.Greater) return BinaryOperator.Greater;
+				if (op.getType() == TokenType.GreaterEqual) return BinaryOperator.GreaterEqual;
 				if (op.getType() == TokenType.And) return BinaryOperator.And;
 				if (op.getType() == TokenType.Or) return BinaryOperator.Or;
 				Error.error("Unknown binary operator " + op + ".", op.getSpan());

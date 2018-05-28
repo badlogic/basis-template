@@ -3,16 +3,24 @@ package io.marioslab.basis.template;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.List;
+
 import org.junit.Test;
 
+import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
+import io.marioslab.basis.template.parsing.Ast.BinaryOperation.BinaryOperator;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
+import io.marioslab.basis.template.parsing.Ast.Node;
 import io.marioslab.basis.template.parsing.Ast.NumberLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
+import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
 import io.marioslab.basis.template.parsing.Ast.TextNode;
+import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
+import io.marioslab.basis.template.parsing.Ast.UnaryOperation.UnaryOperator;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
 import io.marioslab.basis.template.parsing.Parser;
 
@@ -155,5 +163,151 @@ public class ParserTest {
 		MapOrArrayAccess arrayAccess2 = (MapOrArrayAccess)functionCall2.getFunction();
 		MemberAccess fieldAccess2 = (MemberAccess)arrayAccess2.getMapOrArray();
 		VariableAccess variableAccess = (VariableAccess)fieldAccess2.getObject();
+	}
+
+	@Test
+	public void testTernaryOperator () {
+		Template template = new Parser().parse("{{ \"hello\" ? 123 : true }}");
+		List<Node> nodes = template.getNodes();
+		assertEquals(1, nodes.size());
+		assertEquals(TernaryOperation.class, nodes.get(0).getClass());
+		TernaryOperation ternary = (TernaryOperation)nodes.get(0);
+		assertEquals(StringLiteral.class, ternary.getCondition().getClass());
+		assertEquals(NumberLiteral.class, ternary.getTrueExpression().getClass());
+		assertEquals(BooleanLiteral.class, ternary.getFalseExpression().getClass());
+	}
+
+	@Test
+	public void testBinaryMathOperators () {
+		List<Node> nodes = new Parser().parse("{{ 1 + 2 * 3 / 4 % 5 }}").getNodes();
+		BinaryOperation add = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Addition, add.getOperator());
+		assertEquals(NumberLiteral.class, add.getLeftOperand().getClass());
+		BinaryOperation mod = (BinaryOperation)add.getRightOperand();
+		assertEquals(BinaryOperator.Modulo, mod.getOperator());
+		assertEquals(NumberLiteral.class, mod.getRightOperand().getClass());
+		BinaryOperation div = (BinaryOperation)mod.getLeftOperand();
+		assertEquals(BinaryOperator.Division, div.getOperator());
+		BinaryOperation mul = (BinaryOperation)div.getLeftOperand();
+		assertEquals(BinaryOperator.Multiplication, mul.getOperator());
+		assertEquals(NumberLiteral.class, mul.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, mul.getRightOperand().getClass());
+	}
+
+	@Test
+	public void testComparisonOperators () {
+		List<Node> nodes = new Parser().parse("{{ 1 < 2 }}").getNodes();
+		BinaryOperation less = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Less, less.getOperator());
+		assertEquals(NumberLiteral.class, less.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, less.getRightOperand().getClass());
+
+		nodes = new Parser().parse("{{ 1 > 2 }}").getNodes();
+		BinaryOperation greater = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Greater, greater.getOperator());
+		assertEquals(NumberLiteral.class, greater.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, greater.getRightOperand().getClass());
+
+		nodes = new Parser().parse("{{ 1 >= 2 }}").getNodes();
+		BinaryOperation greaterEqual = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.GreaterEqual, greaterEqual.getOperator());
+		assertEquals(NumberLiteral.class, greaterEqual.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, greaterEqual.getRightOperand().getClass());
+
+		nodes = new Parser().parse("{{ 1 <= 2 }}").getNodes();
+		BinaryOperation lessEqual = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.LessEqual, lessEqual.getOperator());
+		assertEquals(NumberLiteral.class, lessEqual.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, lessEqual.getRightOperand().getClass());
+
+		nodes = new Parser().parse("{{ 1 == 2 }}").getNodes();
+		BinaryOperation equal = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Equal, equal.getOperator());
+		assertEquals(NumberLiteral.class, equal.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, equal.getRightOperand().getClass());
+
+		nodes = new Parser().parse("{{ 1 != 2 }}").getNodes();
+		BinaryOperation notEqual = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.NotEqual, notEqual.getOperator());
+		assertEquals(NumberLiteral.class, notEqual.getLeftOperand().getClass());
+		assertEquals(NumberLiteral.class, notEqual.getRightOperand().getClass());
+	}
+
+	@Test
+	public void testLogicalOperators () {
+		List<Node> nodes = new Parser().parse("{{ true && false }}").getNodes();
+		BinaryOperation and = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.And, and.getOperator());
+		assertEquals(BooleanLiteral.class, and.getLeftOperand().getClass());
+		assertEquals(BooleanLiteral.class, and.getRightOperand().getClass());
+
+		nodes = new Parser().parse("{{ true || false }}").getNodes();
+		BinaryOperation or = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Or, or.getOperator());
+		assertEquals(BooleanLiteral.class, or.getLeftOperand().getClass());
+		assertEquals(BooleanLiteral.class, or.getRightOperand().getClass());
+	}
+
+	@Test
+	public void testUnaryOperators () {
+		List<Node> nodes = new Parser().parse("{{ !true }}").getNodes();
+		UnaryOperation and = (UnaryOperation)nodes.get(0);
+		assertEquals(UnaryOperator.Not, and.getOperator());
+		assertEquals(BooleanLiteral.class, and.getOperand().getClass());
+
+		nodes = new Parser().parse("{{ -1 }}").getNodes();
+		UnaryOperation negate = (UnaryOperation)nodes.get(0);
+		assertEquals(UnaryOperator.Negate, negate.getOperator());
+		assertEquals(NumberLiteral.class, negate.getOperand().getClass());
+
+		nodes = new Parser().parse("{{ +1 }}").getNodes();
+		UnaryOperation positive = (UnaryOperation)nodes.get(0);
+		assertEquals(UnaryOperator.Positive, positive.getOperator());
+		assertEquals(NumberLiteral.class, negate.getOperand().getClass());
+
+		nodes = new Parser().parse("{{  1 + -2 }}").getNodes();
+		BinaryOperation add = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Addition, add.getOperator());
+		assertEquals(NumberLiteral.class, add.getLeftOperand().getClass());
+		negate = (UnaryOperation)add.getRightOperand();
+		assertEquals(UnaryOperator.Negate, negate.getOperator());
+		assertEquals(NumberLiteral.class, negate.getOperand().getClass());
+	}
+
+	@Test
+	public void testOperatorPrecedence () {
+		List<Node> nodes = new Parser().parse("{{ 2 + 3 * -4 < !(true || 2 >= foo.bar[0](a, \"test\", 123, true)) }}").getNodes();
+		BinaryOperation less = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Less, less.getOperator());
+		BinaryOperation add = (BinaryOperation)less.getLeftOperand();
+		assertEquals(BinaryOperator.Addition, add.getOperator());
+		assertEquals(NumberLiteral.class, add.getLeftOperand().getClass());
+		BinaryOperation mul = (BinaryOperation)add.getRightOperand();
+		assertEquals(BinaryOperator.Multiplication, mul.getOperator());
+		assertEquals(NumberLiteral.class, mul.getLeftOperand().getClass());
+		UnaryOperation negate = (UnaryOperation)mul.getRightOperand();
+		assertEquals(UnaryOperator.Negate, negate.getOperator());
+		assertEquals(NumberLiteral.class, negate.getOperand().getClass());
+
+		UnaryOperation not = (UnaryOperation)less.getRightOperand();
+		assertEquals(UnaryOperator.Not, not.getOperator());
+		BinaryOperation or = (BinaryOperation)not.getOperand();
+		assertEquals(BooleanLiteral.class, or.getLeftOperand().getClass());
+		BinaryOperation greaterEqual = (BinaryOperation)or.getRightOperand();
+		assertEquals(BinaryOperator.GreaterEqual, greaterEqual.getOperator());
+		assertEquals(NumberLiteral.class, greaterEqual.getLeftOperand().getClass());
+
+		FunctionCall call = (FunctionCall)greaterEqual.getRightOperand();
+		assertEquals(4, call.getArguments().size());
+		assertEquals(VariableAccess.class, call.getArguments().get(0).getClass());
+		assertEquals(StringLiteral.class, call.getArguments().get(1).getClass());
+		assertEquals(NumberLiteral.class, call.getArguments().get(2).getClass());
+		assertEquals(BooleanLiteral.class, call.getArguments().get(3).getClass());
+		MapOrArrayAccess mapAccess = (MapOrArrayAccess)call.getFunction();
+		assertEquals(NumberLiteral.class, mapAccess.getKeyOrIndex().getClass());
+		MemberAccess memberAccess = (MemberAccess)mapAccess.getMapOrArray();
+		assertEquals("bar", memberAccess.getName().getText());
+		VariableAccess variableAccess = (VariableAccess)memberAccess.getObject();
+		assertEquals("foo", variableAccess.getVariableName().getText());
 	}
 }

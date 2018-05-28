@@ -93,7 +93,7 @@ public class Parser {
 		} else {
 			if (stream.match(TokenType.LeftParantheses, true)) {
 				ExpressionNode expression = parseExpression(stream);
-				stream.expect(TokenType.LeftParantheses);
+				stream.expect(TokenType.RightParantheses);
 				return expression;
 			} else {
 				return parseAccessOrCallOrLiteral(stream);
