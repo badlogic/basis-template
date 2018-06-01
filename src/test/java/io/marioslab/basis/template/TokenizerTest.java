@@ -55,8 +55,8 @@ public class TokenizerTest {
 
 	@Test
 	public void testTokenizer () {
-		List<Token> tokens = new Tokenizer().tokenize(
-			"{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; }}");
+		List<Token> tokens = new Tokenizer()
+			.tokenize("{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; }}");
 		assertEquals("Expected 23 tokens", 28, tokens.size());
 		assertEquals(TokenType.Period, tokens.get(0).getType());
 		assertEquals(TokenType.Plus, tokens.get(1).getType());
@@ -76,13 +76,13 @@ public class TokenizerTest {
 		assertEquals(TokenType.And, tokens.get(15).getType());
 		assertEquals(TokenType.Or, tokens.get(16).getType());
 		assertEquals(TokenType.Not, tokens.get(17).getType());
-		assertEquals(TokenType.NumberLiteral, tokens.get(18).getType());
+		assertEquals(TokenType.IntegerLiteral, tokens.get(18).getType());
 		assertEquals("1", tokens.get(18).getText());
-		assertEquals(TokenType.NumberLiteral, tokens.get(19).getType());
+		assertEquals(TokenType.IntegerLiteral, tokens.get(19).getType());
 		assertEquals("123", tokens.get(19).getText());
-		assertEquals(TokenType.NumberLiteral, tokens.get(20).getType());
+		assertEquals(TokenType.FloatLiteral, tokens.get(20).getType());
 		assertEquals("123.", tokens.get(20).getText());
-		assertEquals(TokenType.NumberLiteral, tokens.get(21).getType());
+		assertEquals(TokenType.FloatLiteral, tokens.get(21).getType());
 		assertEquals("123.432", tokens.get(21).getText());
 		assertEquals(TokenType.StringLiteral, tokens.get(22).getType());
 		assertEquals("\"this is a string literal with a \\\" quote \"", tokens.get(22).getText());

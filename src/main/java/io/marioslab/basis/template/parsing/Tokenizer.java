@@ -4,6 +4,8 @@ package io.marioslab.basis.template.parsing;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.marioslab.basis.template.Error;
+
 public class Tokenizer {
 
 	/** Tokenizes the source into tokens. Text blocks not enclosed in {{ }} are returned as a single token of type
@@ -48,13 +50,17 @@ public class Tokenizer {
 
 			// Number literal
 			if (stream.matchDigit(false)) {
+				boolean isFloat = false;
 				stream.startSpan();
 				while (stream.matchDigit(true))
 					;
-				if (stream.match(TokenType.Period.getLiteral(), true)) while (stream.matchDigit(true))
-					;
+				if (stream.match(TokenType.Period.getLiteral(), true)) {
+					isFloat = true;
+					while (stream.matchDigit(true))
+						;
+				}
 				Span numberSpan = stream.endSpan();
-				tokens.add(new Token(TokenType.NumberLiteral, numberSpan));
+				tokens.add(new Token(isFloat ? TokenType.FloatLiteral : TokenType.IntegerLiteral, numberSpan));
 				continue;
 			}
 
@@ -77,7 +83,7 @@ public class Tokenizer {
 				continue;
 			}
 
-			// Identifier, keyword, or boolean literal
+			// Identifier, keyword, boolean literal, or null literal
 			if (stream.matchIdentifierStart(true)) {
 				stream.startSpan();
 				while (stream.matchIdentifierPart(true))
@@ -85,9 +91,10 @@ public class Tokenizer {
 				Span identifierSpan = stream.endSpan();
 				identifierSpan = new Span(identifierSpan.getSource(), identifierSpan.getStart() - 1, identifierSpan.getEnd());
 
-				// Boolean literal
 				if (identifierSpan.getText().equals("true") || identifierSpan.getText().equals("false")) {
 					tokens.add(new Token(TokenType.BooleanLiteral, identifierSpan));
+				} else if (identifierSpan.getText().equals("null")) {
+					tokens.add(new Token(TokenType.NullLiteral, identifierSpan));
 				} else {
 					tokens.add(new Token(TokenType.Identifier, identifierSpan));
 				}

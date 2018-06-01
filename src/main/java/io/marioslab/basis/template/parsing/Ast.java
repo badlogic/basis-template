@@ -4,6 +4,8 @@ package io.marioslab.basis.template.parsing;
 import java.util.List;
 import java.util.Map;
 
+import io.marioslab.basis.template.Error;
+
 public abstract class Ast {
 	public static class Node {
 		private final Span span;
@@ -144,20 +146,35 @@ public abstract class Ast {
 			super(literal);
 		}
 
-		public String getRawValue () {
-			return getSpan().getText();
+		/** Returns the literal without quotes **/
+		public String getValue () {
+			String text = getSpan().getText();
+			return text.substring(1, text.length() - 1);
 		}
 	}
 
-	public static class NumberLiteral extends Expression {
+	public static class FloatLiteral extends Expression {
 		private final double value;
 
-		public NumberLiteral (Span literal) {
+		public FloatLiteral (Span literal) {
 			super(literal);
 			this.value = Double.parseDouble(literal.getText());
 		}
 
 		public double getValue () {
+			return value;
+		}
+	}
+
+	public static class IntegerLiteral extends Expression {
+		private final long value;
+
+		public IntegerLiteral (Span literal) {
+			super(literal);
+			this.value = Long.parseLong(literal.getText());
+		}
+
+		public long getValue () {
 			return value;
 		}
 	}
@@ -172,6 +189,12 @@ public abstract class Ast {
 
 		public boolean getValue () {
 			return value;
+		}
+	}
+
+	public static class NullLiteral extends Expression {
+		public NullLiteral (Span span) {
+			super(span);
 		}
 	}
 

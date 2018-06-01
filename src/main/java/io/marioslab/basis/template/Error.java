@@ -1,5 +1,8 @@
 
-package io.marioslab.basis.template.parsing;
+package io.marioslab.basis.template;
+
+import io.marioslab.basis.template.parsing.Span;
+import io.marioslab.basis.template.parsing.TokenStream;
 
 public class Error {
 	public static void error (String message, TokenStream stream) {

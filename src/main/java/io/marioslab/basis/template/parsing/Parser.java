@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.marioslab.basis.template.Template;
+import io.marioslab.basis.template.Error;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
 import io.marioslab.basis.template.parsing.Ast.Expression;
@@ -19,8 +19,10 @@ import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
-import io.marioslab.basis.template.parsing.Ast.NumberLiteral;
+import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
+import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
+import io.marioslab.basis.template.parsing.Ast.NullLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
 import io.marioslab.basis.template.parsing.Ast.Text;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
@@ -29,7 +31,7 @@ import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 
 public class Parser {
 
-	public Template parse (String source) {
+	public ParserResult parse (String source) {
 		List<Node> nodes = new ArrayList<Node>();
 		List<Macro> macros = new ArrayList<Macro>();
 		TokenStream stream = new TokenStream(new Tokenizer().tokenize(source));
@@ -37,7 +39,7 @@ public class Parser {
 		while (stream.hasMore()) {
 			nodes.add(parseStatement(stream, true, macros));
 		}
-		return new Template(nodes, macros);
+		return new ParserResult(nodes, macros);
 	}
 
 	private Node parseStatement (TokenStream tokens, boolean allowMacros, List<Macro> macros) {
@@ -252,10 +254,14 @@ public class Parser {
 			return parseAccessOrCall(stream);
 		} else if (stream.match(TokenType.StringLiteral, false)) {
 			return new StringLiteral(stream.expect(TokenType.StringLiteral).getSpan());
-		} else if (stream.match(TokenType.NumberLiteral, false)) {
-			return new NumberLiteral(stream.expect(TokenType.NumberLiteral).getSpan());
+		} else if (stream.match(TokenType.FloatLiteral, false)) {
+			return new FloatLiteral(stream.expect(TokenType.FloatLiteral).getSpan());
+		} else if (stream.match(TokenType.IntegerLiteral, false)) {
+			return new IntegerLiteral(stream.expect(TokenType.IntegerLiteral).getSpan());
 		} else if (stream.match(TokenType.BooleanLiteral, false)) {
 			return new BooleanLiteral(stream.expect(TokenType.BooleanLiteral).getSpan());
+		} else if (stream.match(TokenType.NullLiteral, false)) {
+			return new NullLiteral(stream.expect(TokenType.NullLiteral).getSpan());
 		} else {
 			Error.error("Expected a variable, field, map, array, function or method call, or literal.", stream);
 			return null; // not reached
@@ -307,5 +313,23 @@ public class Parser {
 			if (!stream.match(TokenType.RightParantheses, false)) stream.expect(TokenType.Comma);
 		}
 		return arguments;
+	}
+
+	public static class ParserResult {
+		private final List<Node> nodes;
+		private final List<Macro> macros;
+
+		public ParserResult (List<Node> nodes, List<Macro> macros) {
+			this.nodes = nodes;
+			this.macros = macros;
+		}
+
+		public List<Node> getNodes () {
+			return nodes;
+		}
+
+		public List<Macro> getMacros () {
+			return macros;
+		}
 	}
 }

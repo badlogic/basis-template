@@ -3,6 +3,8 @@ package io.marioslab.basis.template.parsing;
 
 import java.util.List;
 
+import io.marioslab.basis.template.Error;
+
 /** Iterates over a list of {@link Token} instances, provides methods to match expected tokens and throw errors in case of a
  * mismatch. */
 public class TokenStream {
