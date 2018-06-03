@@ -141,15 +141,22 @@ public abstract class Ast {
 		}
 	}
 
-	public static class StringLiteral extends Expression {
-		public StringLiteral (Span literal) {
+	public static class NullLiteral extends Expression {
+		public NullLiteral (Span span) {
+			super(span);
+		}
+	}
+
+	public static class BooleanLiteral extends Expression {
+		private final boolean value;
+
+		public BooleanLiteral (Span literal) {
 			super(literal);
+			this.value = Boolean.parseBoolean(literal.getText());
 		}
 
-		/** Returns the literal without quotes **/
-		public String getValue () {
-			String text = getSpan().getText();
-			return text.substring(1, text.length() - 1);
+		public boolean getValue () {
+			return value;
 		}
 	}
 
@@ -167,34 +174,27 @@ public abstract class Ast {
 	}
 
 	public static class IntegerLiteral extends Expression {
-		private final long value;
+		private final int value;
 
 		public IntegerLiteral (Span literal) {
 			super(literal);
-			this.value = Long.parseLong(literal.getText());
+			this.value = Integer.parseInt(literal.getText());
 		}
 
-		public long getValue () {
+		public int getValue () {
 			return value;
 		}
 	}
 
-	public static class BooleanLiteral extends Expression {
-		private final boolean value;
-
-		public BooleanLiteral (Span literal) {
+	public static class StringLiteral extends Expression {
+		public StringLiteral (Span literal) {
 			super(literal);
-			this.value = Boolean.parseBoolean(literal.getText());
 		}
 
-		public boolean getValue () {
-			return value;
-		}
-	}
-
-	public static class NullLiteral extends Expression {
-		public NullLiteral (Span span) {
-			super(span);
+		/** Returns the literal without quotes **/
+		public String getValue () {
+			String text = getSpan().getText();
+			return text.substring(1, text.length() - 1);
 		}
 	}
 

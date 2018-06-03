@@ -37,9 +37,9 @@ public class TokenStream {
 			Token token = index < tokens.size() ? tokens.get(index) : null;
 			Span span = token != null ? token.getSpan() : null;
 			if (span == null)
-				Error.error("Expected " + type.error + ", but reached the end of the source.", this);
+				Error.error("Expected '" + type.error + "', but reached the end of the source.", this);
 			else
-				Error.error("Expected " + type.error + ", but got \"" + token.getText() + "\"", span);
+				Error.error("Expected '" + type.error + "', but got '" + token.getText() + "'", span);
 			return null; // never reached
 		} else {
 			return tokens.get(index - 1);
@@ -54,9 +54,9 @@ public class TokenStream {
 			Token token = index < tokens.size() ? tokens.get(index) : null;
 			Span span = token != null ? token.getSpan() : null;
 			if (span == null)
-				Error.error("Expected \"" + text + "\", but reached the end of the source.", this);
+				Error.error("Expected '" + text + "', but reached the end of the source.", this);
 			else
-				Error.error("Expected \"" + text + "\", but got \"" + token.getText() + "\"", span);
+				Error.error("Expected '" + text + "', but got '" + token.getText() + "'", span);
 			return null; // never reached
 		} else {
 			return tokens.get(index - 1);
