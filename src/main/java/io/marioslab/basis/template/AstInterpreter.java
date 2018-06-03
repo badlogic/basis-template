@@ -194,6 +194,7 @@ public class AstInterpreter {
 // if (left instanceof Double || right instanceof Double)
 // } else {
 			Error.error("Binary operator " + op.getOperator().name() + " not implemented", node.getSpan());
+			return null;
 // }
 		} else {
 			Error.error("Interpretation of node " + node.getClass().getSimpleName() + " not implemented.", node.getSpan());
