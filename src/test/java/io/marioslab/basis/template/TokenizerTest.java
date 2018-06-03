@@ -55,9 +55,9 @@ public class TokenizerTest {
 
 	@Test
 	public void testTokenizer () {
-		List<Token> tokens = new Tokenizer()
-			.tokenize("{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; }}");
-		assertEquals("Expected 23 tokens", 28, tokens.size());
+		List<Token> tokens = new Tokenizer().tokenize(
+			"{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; 1b 1s 1l 1f 1.0d 'c' '\\n'}}");
+		assertEquals("Expected 35 tokens", 35, tokens.size());
 		assertEquals(TokenType.Period, tokens.get(0).getType());
 		assertEquals(TokenType.Plus, tokens.get(1).getType());
 		assertEquals(TokenType.Minus, tokens.get(2).getType());
@@ -94,5 +94,10 @@ public class TokenizerTest {
 		assertEquals("$id", tokens.get(25).getText());
 		assertEquals(TokenType.Comma, tokens.get(26).getType());
 		assertEquals(TokenType.Semicolon, tokens.get(27).getType());
+		assertEquals(TokenType.ByteLiteral, tokens.get(28).getType());
+		assertEquals(TokenType.ShortLiteral, tokens.get(29).getType());
+		assertEquals(TokenType.LongLiteral, tokens.get(30).getType());
+		assertEquals(TokenType.FloatLiteral, tokens.get(31).getType());
+		assertEquals(TokenType.DoubleLiteral, tokens.get(32).getType());
 	}
 }

@@ -47,10 +47,11 @@ public class InterpreterTest {
 	@Test
 	public void testLiterals () {
 		MapTemplateLoader loader = new MapTemplateLoader();
-		loader.set("hello", "Hello {{null}}, {{true}}, {{1234}}, {{12.34}}, {{\"world\"}}");
+		loader.set("hello",
+			"Hello {{null}}, {{true}}, {{1234}}, {{12.34}}, {{123b}}, {{123s}}, {{123l}}, {{123f}}, {{123d}}, {{123.0d}}, {{'a'}}, {{'\\n'}}, {{\"world\"}}");
 		Template template = Template.load("hello", loader);
 		String result = template.render(new TemplateContext());
-		assertEquals("Hello , true, 1234, 12.34, world", result);
+		assertEquals("Hello , true, 1234, 12.34, 123, 123, 123, 123.0, 123.0, 123.0, a, \n, world", result);
 	}
 
 	@Test
@@ -214,5 +215,21 @@ public class InterpreterTest {
 		template = Template.load("hello", loader);
 		result = template.render(context);
 		assertEquals("false", result);
+	}
+
+	@Test
+	public void testAddition () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{1 + 1}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("2", result);
+
+		loader.set("hello", "{{1.0 + 1}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("2.0", result);
 	}
 }

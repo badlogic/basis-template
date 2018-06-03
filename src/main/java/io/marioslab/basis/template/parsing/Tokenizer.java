@@ -50,17 +50,43 @@ public class Tokenizer {
 
 			// Number literal
 			if (stream.matchDigit(false)) {
-				boolean isFloat = false;
+				TokenType type = TokenType.IntegerLiteral;
 				stream.startSpan();
 				while (stream.matchDigit(true))
 					;
 				if (stream.match(TokenType.Period.getLiteral(), true)) {
-					isFloat = true;
+					type = TokenType.FloatLiteral;
 					while (stream.matchDigit(true))
 						;
 				}
+				if (stream.match("b", true)) {
+					if (type == TokenType.FloatLiteral) Error.error("Byte literal can not have a decimal point.", stream.endSpan());
+					type = TokenType.ByteLiteral;
+				} else if (stream.match("s", true)) {
+					if (type == TokenType.FloatLiteral) Error.error("Short literal can not have a decimal point.", stream.endSpan());
+					type = TokenType.ShortLiteral;
+				} else if (stream.match("l", true)) {
+					if (type == TokenType.FloatLiteral) Error.error("Long literal can not have a decimal point.", stream.endSpan());
+					type = TokenType.LongLiteral;
+				} else if (stream.match("f", true)) {
+					type = TokenType.FloatLiteral;
+				} else if (stream.match("d", true)) {
+					type = TokenType.DoubleLiteral;
+				}
 				Span numberSpan = stream.endSpan();
-				tokens.add(new Token(isFloat ? TokenType.FloatLiteral : TokenType.IntegerLiteral, numberSpan));
+				tokens.add(new Token(type, numberSpan));
+				continue;
+			}
+
+			// Character literal
+			if (stream.match("'", false)) {
+				stream.startSpan();
+				stream.consume();
+				stream.match("\\", true);
+				stream.consume();
+				if (!stream.match("'", true)) Error.error("Expected closing ' for character literal.", stream.endSpan());
+				Span literalSpan = stream.endSpan();
+				tokens.add(new Token(TokenType.CharacterLiteral, literalSpan));
 				continue;
 			}
 
@@ -69,6 +95,7 @@ public class Tokenizer {
 				stream.startSpan();
 				boolean matchedEndQuote = false;
 				while (stream.hasMore()) {
+					// TODO add more escape sequences
 					if (stream.match("\\\"", true)) continue;
 					if (stream.match(TokenType.DoubleQuote.literal, true)) {
 						matchedEndQuote = true;

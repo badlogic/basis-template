@@ -11,15 +11,20 @@ import java.util.Map;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation.BinaryOperator;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
+import io.marioslab.basis.template.parsing.Ast.ByteLiteral;
+import io.marioslab.basis.template.parsing.Ast.CharacterLiteral;
+import io.marioslab.basis.template.parsing.Ast.DoubleLiteral;
 import io.marioslab.basis.template.parsing.Ast.Expression;
 import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
+import io.marioslab.basis.template.parsing.Ast.LongLiteral;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
 import io.marioslab.basis.template.parsing.Ast.NullLiteral;
+import io.marioslab.basis.template.parsing.Ast.ShortLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.Text;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
@@ -52,11 +57,26 @@ public class AstInterpreter {
 		} else if (node instanceof BooleanLiteral) {
 			return ((BooleanLiteral)node).getValue();
 
+		} else if (node instanceof DoubleLiteral) {
+			return ((DoubleLiteral)node).getValue();
+
 		} else if (node instanceof FloatLiteral) {
 			return ((FloatLiteral)node).getValue();
 
+		} else if (node instanceof ByteLiteral) {
+			return ((ByteLiteral)node).getValue();
+
+		} else if (node instanceof ShortLiteral) {
+			return ((ShortLiteral)node).getValue();
+
 		} else if (node instanceof IntegerLiteral) {
 			return ((IntegerLiteral)node).getValue();
+
+		} else if (node instanceof LongLiteral) {
+			return ((LongLiteral)node).getValue();
+
+		} else if (node instanceof CharacterLiteral) {
+			return ((CharacterLiteral)node).getValue();
 
 		} else if (node instanceof StringLiteral) {
 			return ((StringLiteral)node).getValue();
@@ -185,17 +205,61 @@ public class AstInterpreter {
 			} else {
 				return operand;
 			}
+
 		} else if (node instanceof BinaryOperation) {
 			BinaryOperation op = (BinaryOperation)node;
 			Object left = interpretNode(op.getLeftOperand(), template, context, out);
 			Object right = interpretNode(op.getRightOperand(), template, context, out);
 
-// if (op.getOperator() == BinaryOperator.Addition || op.getOperator()) {
-// if (left instanceof Double || right instanceof Double)
-// } else {
-			Error.error("Binary operator " + op.getOperator().name() + " not implemented", node.getSpan());
-			return null;
-// }
+			if (op.getOperator() == BinaryOperator.Addition) {
+				if (!(left instanceof Number || left instanceof String))
+					Error.error("Left operand must be a number or String, got " + left + ".", op.getLeftOperand().getSpan());
+				if (!(right instanceof Number || right instanceof String))
+					Error.error("Right operand must be a number or String, got " + right + ".", op.getRightOperand().getSpan());
+
+				if (left instanceof String || right instanceof String) {
+					return left.toString() + right.toString();
+				} else if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() + ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() + ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() + ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() + ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() + ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() + ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for addition operator must be numbers or strings, got " + left + ", " + right + ".", node.getSpan());
+					return null; // never reached
+				}
+			}
+			if (op.getOperator() == BinaryOperator.Subtraction) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", op.getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", op.getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() - ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() - ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() - ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() - ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() - ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() - ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for addition operator must be numbers" + left + ", " + right + ".", node.getSpan());
+					return null; // never reached
+				}
+			} else {
+				Error.error("Binary operator " + op.getOperator().name() + " not implemented", node.getSpan());
+				return null;
+			}
 		} else {
 			Error.error("Interpretation of node " + node.getClass().getSimpleName() + " not implemented.", node.getSpan());
 			return null; // never reached

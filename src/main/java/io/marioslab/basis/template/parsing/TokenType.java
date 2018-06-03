@@ -35,8 +35,13 @@ public enum TokenType {
 	Questionmark("?", "?"),
 	DoubleQuote("\"", "\""),
 	BooleanLiteral("true or false"),
+	DoubleLiteral("a double floating point number"),
 	FloatLiteral("a floating point number"),
+	LongLiteral("a long integer number"),
 	IntegerLiteral("an integer number"),
+	ShortLiteral("a short integer number"),
+	ByteLiteral("a byte integer number"),
+	CharacterLiteral("a character"),
 	StringLiteral("a string"),
 	NullLiteral("null"),
 	Identifier("an identifier");

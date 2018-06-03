@@ -15,6 +15,9 @@ import org.junit.Test;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation.BinaryOperator;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
+import io.marioslab.basis.template.parsing.Ast.ByteLiteral;
+import io.marioslab.basis.template.parsing.Ast.CharacterLiteral;
+import io.marioslab.basis.template.parsing.Ast.DoubleLiteral;
 import io.marioslab.basis.template.parsing.Ast.Expression;
 import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
 import io.marioslab.basis.template.parsing.Ast.ForStatement;
@@ -22,11 +25,13 @@ import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.IfStatement;
 import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
+import io.marioslab.basis.template.parsing.Ast.LongLiteral;
 import io.marioslab.basis.template.parsing.Ast.Macro;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
+import io.marioslab.basis.template.parsing.Ast.ShortLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
 import io.marioslab.basis.template.parsing.Ast.Text;
@@ -69,11 +74,38 @@ public class ParserTest {
 
 	@Test
 	public void testFloatLiteralNode () {
-		ParserResult template = new Parser().parse("{{123.456}}");
+		ParserResult template = new Parser().parse("{{123.0}}");
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", FloatLiteral.class, template.getNodes().get(0).getClass());
 		FloatLiteral literal = (FloatLiteral)template.getNodes().get(0);
-		assertEquals("Expected 123.56 literal", 123.456, literal.getValue(), 0);
+		assertEquals("Expected 123.0 literal", 123.0, literal.getValue(), 0);
+	}
+
+	@Test
+	public void testDoubleLiteralNode () {
+		ParserResult template = new Parser().parse("{{123.0d}}");
+		assertEquals("Expected 1 node", 1, template.getNodes().size());
+		assertEquals("Expected DoubleLiteral node", DoubleLiteral.class, template.getNodes().get(0).getClass());
+		DoubleLiteral literal = (DoubleLiteral)template.getNodes().get(0);
+		assertEquals("Expected 123.0 literal", 123.0, literal.getValue(), 0);
+	}
+
+	@Test
+	public void testByteLiteralNode () {
+		ParserResult template = new Parser().parse("{{123b}}");
+		assertEquals("Expected 1 node", 1, template.getNodes().size());
+		assertEquals("Expected NumberLiteral node", ByteLiteral.class, template.getNodes().get(0).getClass());
+		ByteLiteral literal = (ByteLiteral)template.getNodes().get(0);
+		assertEquals("Expected 123 literal", 123, literal.getValue(), 0);
+	}
+
+	@Test
+	public void testShortLiteralNode () {
+		ParserResult template = new Parser().parse("{{123s}}");
+		assertEquals("Expected 1 node", 1, template.getNodes().size());
+		assertEquals("Expected NumberLiteral node", ShortLiteral.class, template.getNodes().get(0).getClass());
+		ShortLiteral literal = (ShortLiteral)template.getNodes().get(0);
+		assertEquals("Expected 123 literal", 123, literal.getValue(), 0);
 	}
 
 	@Test
@@ -83,6 +115,26 @@ public class ParserTest {
 		assertEquals("Expected NumberLiteral node", IntegerLiteral.class, template.getNodes().get(0).getClass());
 		IntegerLiteral literal = (IntegerLiteral)template.getNodes().get(0);
 		assertEquals("Expected 123456 literal", 123456, literal.getValue(), 0);
+	}
+
+	@Test
+	public void testCharacterLiteralNode () {
+		ParserResult template = new Parser().parse("{{'a' '\\n'}}");
+		assertEquals("Expected 2 node", 2, template.getNodes().size());
+		assertEquals("Expected NumberLiteral node", CharacterLiteral.class, template.getNodes().get(0).getClass());
+		CharacterLiteral literal = (CharacterLiteral)template.getNodes().get(0);
+		assertEquals("Expected a literal", 'a', literal.getValue(), 0);
+		literal = (CharacterLiteral)template.getNodes().get(1);
+		assertEquals("Expected a literal", '\n', literal.getValue(), 0);
+	}
+
+	@Test
+	public void testLongLiteralNode () {
+		ParserResult template = new Parser().parse("{{123456l}}");
+		assertEquals("Expected 1 node", 1, template.getNodes().size());
+		assertEquals("Expected NumberLiteral node", LongLiteral.class, template.getNodes().get(0).getClass());
+		LongLiteral literal = (LongLiteral)template.getNodes().get(0);
+		assertEquals("Expected 123456 literal", 123456l, literal.getValue(), 0);
 	}
 
 	@Test

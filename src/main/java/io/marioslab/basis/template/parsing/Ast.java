@@ -160,15 +160,56 @@ public abstract class Ast {
 		}
 	}
 
-	public static class FloatLiteral extends Expression {
+	public static class DoubleLiteral extends Expression {
 		private final double value;
 
-		public FloatLiteral (Span literal) {
+		public DoubleLiteral (Span literal) {
 			super(literal);
-			this.value = Double.parseDouble(literal.getText());
+			this.value = Double.parseDouble(literal.getText().substring(0, literal.getText().length() - 1));
 		}
 
 		public double getValue () {
+			return value;
+		}
+	}
+
+	public static class FloatLiteral extends Expression {
+		private final float value;
+
+		public FloatLiteral (Span literal) {
+			super(literal);
+			String text = literal.getText();
+			if (text.charAt(text.length() - 1) == 'f') text = text.substring(0, text.length() - 1);
+			this.value = Float.parseFloat(text);
+		}
+
+		public float getValue () {
+			return value;
+		}
+	}
+
+	public static class ByteLiteral extends Expression {
+		private final byte value;
+
+		public ByteLiteral (Span literal) {
+			super(literal);
+			this.value = Byte.parseByte(literal.getText().substring(0, literal.getText().length() - 1));
+		}
+
+		public byte getValue () {
+			return value;
+		}
+	}
+
+	public static class ShortLiteral extends Expression {
+		private final short value;
+
+		public ShortLiteral (Span literal) {
+			super(literal);
+			this.value = Short.parseShort(literal.getText().substring(0, literal.getText().length() - 1));
+		}
+
+		public short getValue () {
 			return value;
 		}
 	}
@@ -182,6 +223,49 @@ public abstract class Ast {
 		}
 
 		public int getValue () {
+			return value;
+		}
+	}
+
+	public static class LongLiteral extends Expression {
+		private final long value;
+
+		public LongLiteral (Span literal) {
+			super(literal);
+			this.value = Long.parseLong(literal.getText().substring(0, literal.getText().length() - 1));
+		}
+
+		public long getValue () {
+			return value;
+		}
+	}
+
+	public static class CharacterLiteral extends Expression {
+		private final char value;
+
+		public CharacterLiteral (Span literal) {
+			super(literal);
+
+			String text = literal.getText();
+			if (text.length() > 3) {
+				if (text.charAt(2) == 'n')
+					value = '\n';
+				else if (text.charAt(2) == 'r')
+					value = '\r';
+				else if (text.charAt(2) == 't')
+					value = '\t';
+				else if (text.charAt(2) == '\\')
+					value = '\\';
+				else {
+					Error.error("Unknown escape sequence '" + literal.getText() + "'.", literal);
+					value = 0; // never reached
+				}
+			} else {
+				this.value = literal.getText().charAt(1);
+			}
+		}
+
+		public char getValue () {
 			return value;
 		}
 	}

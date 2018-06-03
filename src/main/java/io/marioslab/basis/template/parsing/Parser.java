@@ -9,20 +9,25 @@ import java.util.Map;
 import io.marioslab.basis.template.Error;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
+import io.marioslab.basis.template.parsing.Ast.ByteLiteral;
+import io.marioslab.basis.template.parsing.Ast.CharacterLiteral;
+import io.marioslab.basis.template.parsing.Ast.DoubleLiteral;
 import io.marioslab.basis.template.parsing.Ast.Expression;
+import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
 import io.marioslab.basis.template.parsing.Ast.ForStatement;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.IfStatement;
 import io.marioslab.basis.template.parsing.Ast.Include;
+import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
+import io.marioslab.basis.template.parsing.Ast.LongLiteral;
 import io.marioslab.basis.template.parsing.Ast.Macro;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
-import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
-import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
-import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.NullLiteral;
+import io.marioslab.basis.template.parsing.Ast.ShortLiteral;
+import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
 import io.marioslab.basis.template.parsing.Ast.Text;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
@@ -254,12 +259,22 @@ public class Parser {
 			return parseAccessOrCall(stream);
 		} else if (stream.match(TokenType.StringLiteral, false)) {
 			return new StringLiteral(stream.expect(TokenType.StringLiteral).getSpan());
-		} else if (stream.match(TokenType.FloatLiteral, false)) {
-			return new FloatLiteral(stream.expect(TokenType.FloatLiteral).getSpan());
-		} else if (stream.match(TokenType.IntegerLiteral, false)) {
-			return new IntegerLiteral(stream.expect(TokenType.IntegerLiteral).getSpan());
 		} else if (stream.match(TokenType.BooleanLiteral, false)) {
 			return new BooleanLiteral(stream.expect(TokenType.BooleanLiteral).getSpan());
+		} else if (stream.match(TokenType.DoubleLiteral, false)) {
+			return new DoubleLiteral(stream.expect(TokenType.DoubleLiteral).getSpan());
+		} else if (stream.match(TokenType.FloatLiteral, false)) {
+			return new FloatLiteral(stream.expect(TokenType.FloatLiteral).getSpan());
+		} else if (stream.match(TokenType.ByteLiteral, false)) {
+			return new ByteLiteral(stream.expect(TokenType.ByteLiteral).getSpan());
+		} else if (stream.match(TokenType.ShortLiteral, false)) {
+			return new ShortLiteral(stream.expect(TokenType.ShortLiteral).getSpan());
+		} else if (stream.match(TokenType.IntegerLiteral, false)) {
+			return new IntegerLiteral(stream.expect(TokenType.IntegerLiteral).getSpan());
+		} else if (stream.match(TokenType.LongLiteral, false)) {
+			return new LongLiteral(stream.expect(TokenType.LongLiteral).getSpan());
+		} else if (stream.match(TokenType.CharacterLiteral, false)) {
+			return new CharacterLiteral(stream.expect(TokenType.CharacterLiteral).getSpan());
 		} else if (stream.match(TokenType.NullLiteral, false)) {
 			return new NullLiteral(stream.expect(TokenType.NullLiteral).getSpan());
 		} else {
