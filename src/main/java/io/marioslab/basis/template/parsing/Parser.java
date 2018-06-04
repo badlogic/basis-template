@@ -220,7 +220,7 @@ public class Parser {
 		}
 	}
 
-	TokenType[][] binaryOperatorPrecedence = new TokenType[][] {new TokenType[] {TokenType.Or, TokenType.And},
+	TokenType[][] binaryOperatorPrecedence = new TokenType[][] {new TokenType[] {TokenType.Or, TokenType.And, TokenType.Xor},
 		new TokenType[] {TokenType.Equal, TokenType.NotEqual}, new TokenType[] {TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual},
 		new TokenType[] {TokenType.Plus, TokenType.Minus}, new TokenType[] {TokenType.ForwardSlash, TokenType.Asterisk, TokenType.Percentage}};
 

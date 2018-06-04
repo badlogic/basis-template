@@ -31,6 +31,7 @@ public enum TokenType {
 	Assignment("=", "="),
 	And("&&", "&&"),
 	Or("||", "||"),
+	Xor("^", "^"),
 	Not("!", "!"),
 	Questionmark("?", "?"),
 	DoubleQuote("\"", "\""),

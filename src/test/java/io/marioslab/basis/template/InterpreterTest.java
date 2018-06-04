@@ -231,5 +231,299 @@ public class InterpreterTest {
 		template = Template.load("hello", loader);
 		result = template.render(context);
 		assertEquals("2.0", result);
+
+		loader.set("hello", "{{1l + 1b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("2", result);
+
+		loader.set("hello", "{{\"hello\" + 1}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("hello1", result);
+
+		loader.set("hello", "{{\"hello\" + \" world\"}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("hello world", result);
+	}
+
+	@Test
+	public void testSubtraction () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{1 - 1}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("0", result);
+
+		loader.set("hello", "{{1.0 - 1}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("0.0", result);
+
+		loader.set("hello", "{{1l - 1b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("0", result);
+	}
+
+	@Test
+	public void testMultiplication () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 * 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("6", result);
+
+		loader.set("hello", "{{3.0 * 2}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("6.0", result);
+
+		loader.set("hello", "{{2l * 3b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("6", result);
+	}
+
+	@Test
+	public void testDivision () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 / 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + 2 / 3, result);
+
+		loader.set("hello", "{{3.0 / 2}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + 3.0 / 2, result);
+
+		loader.set("hello", "{{2l / 3b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + 2l / (byte)3, result);
+	}
+
+	@Test
+	public void testModulo () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 % 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + 2 % 3, result);
+
+		loader.set("hello", "{{3.0 % 2}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + 3.0 % 2, result);
+
+		loader.set("hello", "{{2l % 3b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + 2l % (byte)3, result);
+	}
+
+	@Test
+	public void testLess () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 < 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (2 < 3), result);
+
+		loader.set("hello", "{{3.0f < 3}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (3.0f < 3), result);
+
+		loader.set("hello", "{{2l < 3b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (2l < (byte)3), result);
+	}
+
+	@Test
+	public void testLessEqual () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 <= 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (2 < 3), result);
+
+		loader.set("hello", "{{3.0f <= 3}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (3.0f <= 3), result);
+
+		loader.set("hello", "{{2l <= 3b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (2l <= (byte)3), result);
+	}
+
+	@Test
+	public void testGreater () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 > 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (2 > 3), result);
+
+		loader.set("hello", "{{4.0f > 3}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (4.0f > 3), result);
+
+		loader.set("hello", "{{3l > 2b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (3l > (byte)2), result);
+	}
+
+	@Test
+	public void testGreaterEqual () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 >= 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (2 >= 3), result);
+
+		loader.set("hello", "{{4.0f >= 3}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (4.0f >= 3), result);
+
+		loader.set("hello", "{{3l >= 2b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (3l >= (byte)2), result);
+	}
+
+	@Test
+	public void testEqual () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 == 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (2 == 3), result);
+
+		loader.set("hello", "{{3.0f == 3.0}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (3.0f == 3.0), result);
+
+		loader.set("hello", "{{2l == 2b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (2l == (byte)3), result);
+
+		loader.set("hello", "{{\"hello\" == \"hello\"}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + ("hello".equals("hello")), result);
+	}
+
+	@Test
+	public void testNotEqual () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{2 != 3}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (2 != 3), result);
+
+		loader.set("hello", "{{3.0f != 3.0}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (3.0f != 3.0), result);
+
+		loader.set("hello", "{{2l != 2b}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (2l != (byte)3), result);
+
+		loader.set("hello", "{{\"hello\" != \"hello\"}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + !("hello".equals("hello")), result);
+	}
+
+	@Test
+	public void testAnd () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{true && false}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (true && false), result);
+
+		loader.set("hello", "{{true && true}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (true && true), result);
+	}
+
+	@Test
+	public void testOr () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{true || false}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (true || false), result);
+
+		loader.set("hello", "{{false || true}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (false || true), result);
+	}
+
+	@Test
+	public void testXor () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{true ^ false}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (true ^ false), result);
+	}
+
+	@Test
+	public void testTernaryOperator () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{true ? 1 : 2}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("" + (true ? 1 : 2), result);
+
+		loader.set("hello", "{{false ? 1 : 2}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("" + (false ? 1 : 2), result);
 	}
 }
