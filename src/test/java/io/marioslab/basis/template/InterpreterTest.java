@@ -4,6 +4,7 @@ package io.marioslab.basis.template;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -525,5 +526,140 @@ public class InterpreterTest {
 		template = Template.load("hello", loader);
 		result = template.render(context);
 		assertEquals("" + (false ? 1 : 2), result);
+	}
+
+	@Test
+	public void testFor () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{ for v in map }}value: {{v}}\n{{end}}");
+		Template template = Template.load("hello", loader);
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		map.put("a", 1);
+		map.put("b", 2);
+		map.put("c", 3);
+		context.set("map", map);
+		String result = template.render(context);
+		assertEquals("value: 1\nvalue: 2\nvalue: 3\n", result);
+
+		loader.set("hello", "{{ for k, v in map }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("a: 1\nb: 2\nc: 3\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new boolean[] {true, false, true});
+		result = template.render(context);
+		assertEquals("true\nfalse\ntrue\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new boolean[] {true, false, true});
+		result = template.render(context);
+		assertEquals("0: true\n1: false\n2: true\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new char[] {'x', 'y', 'z'});
+		result = template.render(context);
+		assertEquals("x\ny\nz\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new char[] {'x', 'y', 'z'});
+		result = template.render(context);
+		assertEquals("0: x\n1: y\n2: z\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new byte[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("10\n11\n12\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new byte[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("0: 10\n1: 11\n2: 12\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new short[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("10\n11\n12\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new short[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("0: 10\n1: 11\n2: 12\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new int[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("10\n11\n12\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new int[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("0: 10\n1: 11\n2: 12\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new long[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("10\n11\n12\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new long[] {10, 11, 12});
+		result = template.render(context);
+		assertEquals("0: 10\n1: 11\n2: 12\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new float[] {1.2f, 2.3f, 3.4f});
+		result = template.render(context);
+		assertEquals("1.2\n2.3\n3.4\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new float[] {1.2f, 2.3f, 3.4f});
+		result = template.render(context);
+		assertEquals("0: 1.2\n1: 2.3\n2: 3.4\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new double[] {1.2, 2.3, 3.4});
+		result = template.render(context);
+		assertEquals("1.2\n2.3\n3.4\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new String[] {"aa", "bb", "cc"});
+		result = template.render(context);
+		assertEquals("aa\nbb\ncc\n", result);
+
+		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("array", new String[] {"aa", "bb", "cc"});
+		result = template.render(context);
+		assertEquals("0: aa\n1: bb\n2: cc\n", result);
+
+		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("list", Arrays.asList("aa", "bb", "cc"));
+		result = template.render(context);
+		assertEquals("aa\nbb\ncc\n", result);
+
+		loader.set("hello", "{{ for k, v in list }}{{k}}: {{v}}\n{{end}}");
+		template = Template.load("hello", loader);
+		context.set("list", Arrays.asList("aa", "bb", "cc"));
+		result = template.render(context);
+		assertEquals("0: aa\n1: bb\n2: cc\n", result);
 	}
 }

@@ -5,8 +5,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation.BinaryOperator;
@@ -16,6 +19,7 @@ import io.marioslab.basis.template.parsing.Ast.CharacterLiteral;
 import io.marioslab.basis.template.parsing.Ast.DoubleLiteral;
 import io.marioslab.basis.template.parsing.Ast.Expression;
 import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
+import io.marioslab.basis.template.parsing.Ast.ForStatement;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
 import io.marioslab.basis.template.parsing.Ast.LongLiteral;
@@ -36,16 +40,20 @@ public class AstInterpreter {
 	public void interpret (Template template, TemplateContext context, OutputStream out) {
 		try {
 			Writer writer = new OutputStreamWriter(out);
-			for (int i = 0, n = template.getNodes().size(); i < n; i++) {
-				Node node = template.getNodes().get(i);
-				Object value = interpretNode(node, template, context, writer);
-				if (value != null) {
-					writer.write(String.valueOf(value));
-				}
-			}
+			interpretNodeList(template.getNodes(), template, context, writer);
 			writer.flush();
 		} catch (Throwable t) {
 			throw new RuntimeException(t);
+		}
+	}
+
+	private void interpretNodeList (List<Node> nodes, Template template, TemplateContext context, Writer out) throws IOException {
+		for (int i = 0, n = nodes.size(); i < n; i++) {
+			Node node = nodes.get(i);
+			Object value = interpretNode(node, template, context, out);
+			if (value != null) {
+				out.write(String.valueOf(value));
+			}
 		}
 	}
 
@@ -421,12 +429,213 @@ public class AstInterpreter {
 				Error.error("Binary operator " + op.getOperator().name() + " not implemented", node.getSpan());
 				return null;
 			}
+
 		} else if (node instanceof TernaryOperation) {
 			TernaryOperation op = (TernaryOperation)node;
 			Object condition = interpretNode(op.getCondition(), template, context, out);
 			if (!(condition instanceof Boolean)) Error.error("Condition of ternary operator must be a boolean, got " + condition + ".", node.getSpan());
 			return ((Boolean)condition) ? interpretNode(op.getTrueExpression(), template, context, out)
 				: interpretNode(op.getFalseExpression(), template, context, out);
+
+		} else if (node instanceof ForStatement) {
+			ForStatement forStatement = (ForStatement)node;
+			Object mapOrArray = interpretNode(forStatement.getMapOrArray(), template, context, out);
+			if (mapOrArray == null) Error.error("Expected a map or array, got null.", forStatement.getMapOrArray().getSpan());
+			String valueName = forStatement.getValueName().getText();
+
+			if (mapOrArray instanceof Map) {
+				Map map = (Map)mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (Object entry : map.entrySet()) {
+						Entry e = (Entry)entry;
+						context.set(keyName, e.getKey());
+						context.set(valueName, e.getValue());
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (Object value : map.values()) {
+						context.set(valueName, value);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof Iterable) {
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					Iterator iter = ((Iterable)mapOrArray).iterator();
+					int i = 0;
+					while (iter.hasNext()) {
+						context.set(keyName, i++);
+						context.set(valueName, iter.next());
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					Iterator iter = ((Iterable)mapOrArray).iterator();
+					while (iter.hasNext()) {
+						context.set(valueName, iter.next());
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof int[]) {
+				int[] array = (int[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof float[]) {
+				float[] array = (float[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof double[]) {
+				double[] array = (double[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof boolean[]) {
+				boolean[] array = (boolean[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof char[]) {
+				char[] array = (char[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof short[]) {
+				short[] array = (short[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof byte[]) {
+				byte[] array = (byte[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else if (mapOrArray instanceof long[]) {
+				long[] array = (long[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			} else {
+				Object[] array = (Object[])mapOrArray;
+				if (forStatement.getIndexOrKeyName() != null) {
+					context.push(new HashMap<String, Object>());
+					String keyName = forStatement.getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						interpretNodeList(forStatement.getBody(), template, context, out);
+					}
+				}
+			}
+			return null;
+
 		} else {
 			Error.error("Interpretation of node " + node.getClass().getSimpleName() + " not implemented.", node.getSpan());
 			return null; // never reached
