@@ -694,4 +694,16 @@ public class InterpreterTest {
 		result = template.render(context);
 		assertEquals("test4", result);
 	}
+
+	@Test
+	public void testWhile () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{while iter.hasNext()}}{{iter.next()}}{{end}}");
+		Template template = Template.load("hello", loader);
+		context.set("iter", Arrays.asList("aa", "bb", "cc").iterator());
+		String result = template.render(context);
+		assertEquals("aabbcc", result);
+	}
 }

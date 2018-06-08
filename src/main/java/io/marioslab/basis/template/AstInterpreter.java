@@ -36,6 +36,7 @@ import io.marioslab.basis.template.parsing.Ast.Text;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation.UnaryOperator;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
+import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 
 public class AstInterpreter {
 	public void interpret (Template template, TemplateContext context, OutputStream out) {
@@ -662,6 +663,16 @@ public class AstInterpreter {
 			}
 
 			interpretNodeList(ifStatement.getFalseBlock(), template, context, out);
+			return null;
+		} else if (node instanceof WhileStatement) {
+			WhileStatement whileStatement = (WhileStatement)node;
+			while (true) {
+				Object condition = interpretNode(whileStatement.getCondition(), template, context, out);
+				if (!(condition instanceof Boolean))
+					Error.error("Expected a condition evaluating to a boolean, got " + condition, whileStatement.getCondition().getSpan());
+				if (!((Boolean)condition)) break;
+				interpretNodeList(whileStatement.getBody(), template, context, out);
+			}
 			return null;
 		} else {
 			Error.error("Interpretation of node " + node.getClass().getSimpleName() + " not implemented.", node.getSpan());
