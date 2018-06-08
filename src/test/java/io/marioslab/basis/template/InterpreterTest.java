@@ -662,4 +662,36 @@ public class InterpreterTest {
 		result = template.render(context);
 		assertEquals("0: aa\n1: bb\n2: cc\n", result);
 	}
+
+	@Test
+	public void testIf () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{if true}}test{{end}}");
+		Template template = Template.load("hello", loader);
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		String result = template.render(context);
+		assertEquals("test", result);
+
+		loader.set("hello", "{{if false}}test{{else}}test2{{end}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("test2", result);
+
+		loader.set("hello", "{{if false}}test{{elseif false}}test2{{elseif true}}test3{{else}}test4{{end}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("test3", result);
+
+		loader.set("hello", "{{if false}}test{{elseif false}}test2{{elseif false}}test3{{else}}test4{{end}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("test4", result);
+
+		loader.set("hello", "{{if false}}test{{elseif false}}test2{{elseif true}}{{if false}}test3{{else}}test4{{end}}{{else}}test5{{end}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("test4", result);
+	}
 }

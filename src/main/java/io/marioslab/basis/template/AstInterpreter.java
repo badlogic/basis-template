@@ -21,6 +21,7 @@ import io.marioslab.basis.template.parsing.Ast.Expression;
 import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
 import io.marioslab.basis.template.parsing.Ast.ForStatement;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
+import io.marioslab.basis.template.parsing.Ast.IfStatement;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
 import io.marioslab.basis.template.parsing.Ast.LongLiteral;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
@@ -616,7 +617,7 @@ public class AstInterpreter {
 						interpretNodeList(forStatement.getBody(), template, context, out);
 					}
 				}
-			} else {
+			} else if (mapOrArray instanceof Object[]) {
 				Object[] array = (Object[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
 					context.push(new HashMap<String, Object>());
@@ -633,9 +634,35 @@ public class AstInterpreter {
 						interpretNodeList(forStatement.getBody(), template, context, out);
 					}
 				}
+			} else {
+				Error.error("Expected a map, an array or an iterable, got " + mapOrArray, forStatement.getMapOrArray().getSpan());
 			}
 			return null;
 
+		} else if (node instanceof IfStatement) {
+			IfStatement ifStatement = (IfStatement)node;
+			Object condition = interpretNode(ifStatement.getCondition(), template, context, out);
+			if (!(condition instanceof Boolean))
+				Error.error("Expected a condition evaluating to a boolean, got " + condition, ifStatement.getCondition().getSpan());
+			if ((Boolean)condition) {
+				interpretNodeList(ifStatement.getTrueBlock(), template, context, out);
+				return null;
+			}
+
+			if (ifStatement.getElseIfs().size() > 0) {
+				for (IfStatement elseIf : ifStatement.getElseIfs()) {
+					condition = interpretNode(elseIf.getCondition(), template, context, out);
+					if (!(condition instanceof Boolean))
+						Error.error("Expected a condition evaluating to a boolean, got " + condition, elseIf.getCondition().getSpan());
+					if ((Boolean)condition) {
+						interpretNodeList(elseIf.getTrueBlock(), template, context, out);
+						return null;
+					}
+				}
+			}
+
+			interpretNodeList(ifStatement.getFalseBlock(), template, context, out);
+			return null;
 		} else {
 			Error.error("Interpretation of node " + node.getClass().getSimpleName() + " not implemented.", node.getSpan());
 			return null; // never reached
