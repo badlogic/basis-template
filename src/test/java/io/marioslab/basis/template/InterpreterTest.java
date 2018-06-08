@@ -513,6 +513,18 @@ public class InterpreterTest {
 	}
 
 	@Test
+	public void testAssignment () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{a = 123}}");
+		Template template = Template.load("hello", loader);
+		String result = template.render(context);
+		assertEquals("", result);
+		assertEquals(123, context.get("a"));
+	}
+
+	@Test
 	public void testTernaryOperator () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		TemplateContext context = new TemplateContext();
@@ -700,10 +712,15 @@ public class InterpreterTest {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		TemplateContext context = new TemplateContext();
 
-		loader.set("hello", "{{while iter.hasNext()}}{{iter.next()}}{{end}}");
+		loader.set("hello", "{{while (iter.hasNext()) iter.next() end}}");
 		Template template = Template.load("hello", loader);
 		context.set("iter", Arrays.asList("aa", "bb", "cc").iterator());
 		String result = template.render(context);
 		assertEquals("aabbcc", result);
+
+		loader.set("hello", "{{ i = 10; while (i >= 0) i = i - 1; i; end}}");
+		template = Template.load("hello", loader);
+		result = template.render(context);
+		assertEquals("9876543210-1", result);
 	}
 }

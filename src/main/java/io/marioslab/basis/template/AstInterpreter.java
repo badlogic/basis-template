@@ -219,6 +219,15 @@ public class AstInterpreter {
 
 		} else if (node instanceof BinaryOperation) {
 			BinaryOperation op = (BinaryOperation)node;
+
+			if (op.getOperator() == BinaryOperator.Assignment) {
+				if (!(op.getLeftOperand() instanceof VariableAccess))
+					Error.error("Can only assign to top-level variables in context.", op.getLeftOperand().getSpan());
+				Object value = interpretNode(op.getRightOperand(), template, context, out);
+				context.set(((VariableAccess)op.getLeftOperand()).getVariableName().getText(), value);
+				return null;
+			}
+
 			Object left = interpretNode(op.getLeftOperand(), template, context, out);
 			Object right = op.getOperator() == BinaryOperator.And || op.getOperator() == BinaryOperator.Or ? null
 				: interpretNode(op.getRightOperand(), template, context, out);

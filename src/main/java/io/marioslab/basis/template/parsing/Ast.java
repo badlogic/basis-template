@@ -71,7 +71,7 @@ public abstract class Ast {
 	public static class BinaryOperation extends Expression {
 
 		public static enum BinaryOperator {
-			Addition, Subtraction, Multiplication, Division, Modulo, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, And, Or, Xor;
+			Addition, Subtraction, Multiplication, Division, Modulo, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, And, Or, Xor, Assignment;
 
 			public static BinaryOperator getOperator (Token op) {
 				if (op.getType() == TokenType.Plus) return BinaryOperator.Addition;
@@ -88,6 +88,7 @@ public abstract class Ast {
 				if (op.getType() == TokenType.And) return BinaryOperator.And;
 				if (op.getType() == TokenType.Or) return BinaryOperator.Or;
 				if (op.getType() == TokenType.Xor) return BinaryOperator.Xor;
+				if (op.getType() == TokenType.Assignment) return BinaryOperator.Assignment;
 				Error.error("Unknown binary operator " + op + ".", op.getSpan());
 				return null; // not reached
 			}

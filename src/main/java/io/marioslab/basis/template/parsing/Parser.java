@@ -48,27 +48,35 @@ public class Parser {
 	}
 
 	private Node parseStatement (TokenStream tokens, boolean allowMacros, List<Macro> macros) {
+		Node result = null;
+
 		if (tokens.match(TokenType.TextBlock, false))
-			return new Text(tokens.consume().getSpan());
+			result = new Text(tokens.consume().getSpan());
 		else if (tokens.match("if", false))
-			return parseIfStatement(tokens);
+			result = parseIfStatement(tokens);
 		else if (tokens.match("for", false))
-			return parseForStatement(tokens);
+			result = parseForStatement(tokens);
 		else if (tokens.match("while", false))
-			return parseWhileStatement(tokens);
+			result = parseWhileStatement(tokens);
 		else if (tokens.match("macro", false)) {
 			if (!allowMacros) {
 				Error.error("Macros can only be defined at the top level of a template.", tokens.consume().getSpan());
-				return null; // never reached
+				result = null; // never reached
 			} else {
 				Macro macro = parseMacro(tokens);
 				macros.add(macro);
-				return macro; //
+				result = macro; //
 			}
 		} else if (tokens.match("include", false))
-			return parseInclude(tokens);
+			result = parseInclude(tokens);
 		else
-			return parseExpression(tokens);
+			result = parseExpression(tokens);
+
+		// consume semi-colons as statement delimiters
+		while (tokens.match(";", true))
+			;
+
+		return result;
 	}
 
 	private IfStatement parseIfStatement (TokenStream stream) {
@@ -220,9 +228,10 @@ public class Parser {
 		}
 	}
 
-	TokenType[][] binaryOperatorPrecedence = new TokenType[][] {new TokenType[] {TokenType.Or, TokenType.And, TokenType.Xor},
-		new TokenType[] {TokenType.Equal, TokenType.NotEqual}, new TokenType[] {TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual},
-		new TokenType[] {TokenType.Plus, TokenType.Minus}, new TokenType[] {TokenType.ForwardSlash, TokenType.Asterisk, TokenType.Percentage}};
+	TokenType[][] binaryOperatorPrecedence = new TokenType[][] {new TokenType[] {TokenType.Assignment},
+		new TokenType[] {TokenType.Or, TokenType.And, TokenType.Xor}, new TokenType[] {TokenType.Equal, TokenType.NotEqual},
+		new TokenType[] {TokenType.Less, TokenType.LessEqual, TokenType.Greater, TokenType.GreaterEqual}, new TokenType[] {TokenType.Plus, TokenType.Minus},
+		new TokenType[] {TokenType.ForwardSlash, TokenType.Asterisk, TokenType.Percentage}};
 
 	private Expression parseBinaryOperator (TokenStream stream, int level) {
 		int nextLevel = level + 1;

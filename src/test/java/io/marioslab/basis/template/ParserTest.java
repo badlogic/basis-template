@@ -351,9 +351,20 @@ public class ParserTest {
 	}
 
 	@Test
+	public void testAssignment () {
+		List<Node> nodes = new Parser().parse("{{ a = 123 }}").getNodes();
+		BinaryOperation and = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Assignment, and.getOperator());
+		assertEquals(VariableAccess.class, and.getLeftOperand().getClass());
+		assertEquals(IntegerLiteral.class, and.getRightOperand().getClass());
+	}
+
+	@Test
 	public void testOperatorPrecedence () {
-		List<Node> nodes = new Parser().parse("{{ 2 + 3 * -4 < !(true || 2 >= foo.bar[0](a, \"test\", 123, true)) }}").getNodes();
-		BinaryOperation less = (BinaryOperation)nodes.get(0);
+		List<Node> nodes = new Parser().parse("{{ a = 2 + 3 * -4 < !(true || 2 >= foo.bar[0](a, \"test\", 123, true)) }}").getNodes();
+		BinaryOperation assignment = (BinaryOperation)nodes.get(0);
+		assertEquals(BinaryOperator.Assignment, assignment.getOperator());
+		BinaryOperation less = (BinaryOperation)assignment.getRightOperand();
 		assertEquals(BinaryOperator.Less, less.getOperator());
 		BinaryOperation add = (BinaryOperation)less.getLeftOperand();
 		assertEquals(BinaryOperator.Addition, add.getOperator());
