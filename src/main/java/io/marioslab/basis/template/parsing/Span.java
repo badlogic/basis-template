@@ -64,4 +64,76 @@ public class Span {
 		return "Span [text=" + getText() + ", start=" + start + ", end=" + end + "]";
 	}
 
+	/** @return the line this span is on. Does not return a correct result for spans across multiple lines. **/
+	public Line getLine () {
+		int lineStart = start;
+		while (true) {
+			if (lineStart < 0) break;
+			char c = source.charAt(lineStart);
+			if (c == '\n') {
+				lineStart = lineStart + 1;
+				break;
+			}
+			lineStart--;
+		}
+		if (lineStart < 0) lineStart = 0;
+
+		int lineEnd = end;
+		while (true) {
+			if (lineEnd > source.length() - 1) break;
+			char c = source.charAt(lineEnd);
+			if (c == '\n') {
+				break;
+			}
+			lineEnd++;
+		}
+
+		int lineNumber = 0;
+		int idx = lineStart;
+		while (idx > 0) {
+			char c = source.charAt(idx);
+			if (c == '\n') {
+				lineNumber++;
+			}
+			idx--;
+		}
+		lineNumber++;
+
+		return new Line(source, lineStart, lineEnd, lineNumber);
+	}
+
+	public static class Line {
+		private final String source;
+		private final int start;
+		private final int end;
+		private final int lineNumber;
+
+		public Line (String source, int start, int end, int lineNumber) {
+			super();
+			this.source = source;
+			this.start = start;
+			this.end = end;
+			this.lineNumber = lineNumber;
+		}
+
+		public String getSource () {
+			return source;
+		}
+
+		public int getStart () {
+			return start;
+		}
+
+		public int getEnd () {
+			return end;
+		}
+
+		public int getLineNumber () {
+			return lineNumber;
+		}
+
+		public String getText () {
+			return source.substring(start, end);
+		}
+	}
 }

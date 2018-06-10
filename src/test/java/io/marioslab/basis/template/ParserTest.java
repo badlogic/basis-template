@@ -547,4 +547,14 @@ public class ParserTest {
 		assertTrue(inc.isMacrosOnly());
 		assertEquals("math", inc.getAlias().getText());
 	}
+
+	@Test
+	public void testErrorMessage () {
+		try {
+			new Parser().parse("\n\n\n{{   if (()  }}");
+		} catch (RuntimeException e) {
+			System.out.println(e);
+		}
+	}
+
 }

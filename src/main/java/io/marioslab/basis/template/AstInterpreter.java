@@ -64,7 +64,6 @@ public class AstInterpreter {
 
 	@SuppressWarnings("rawtypes")
 	private Object interpretNode (Node node, Template template, TemplateContext context, Writer out) throws IOException {
-		// TODO wrap node interpretation blocks into try/catch and rethrow with location info.
 		if (node instanceof Text) {
 			out.write(((Text)node).getSpan().getText());
 			return null;
@@ -203,8 +202,6 @@ public class AstInterpreter {
 			}
 
 		} else if (node instanceof FunctionCall) {
-			// TODO calls to macros
-
 			FunctionCall call = (FunctionCall)node;
 			Object[] argumentValues = new Object[call.getArguments().size()];
 			List<Expression> arguments = call.getArguments();

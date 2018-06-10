@@ -3,6 +3,7 @@ package io.marioslab.basis.template;
 
 import io.marioslab.basis.template.parsing.Span;
 import io.marioslab.basis.template.parsing.TokenStream;
+import io.marioslab.basis.template.parsing.Span.Line;
 
 public class Error {
 	public static void error (String message, TokenStream stream) {
@@ -18,7 +19,18 @@ public class Error {
 	}
 
 	public static void error (String message, Span location) {
-		// TODO generate line numbers and nice error message.
-		throw new RuntimeException("Error: " + message + ", " + location.getText());
+
+		Line line = location.getLine();
+		message = "Error (line:" + line.getLineNumber() + "): " + message + "\n\n";
+		message += line.getText();
+		message += "\n";
+
+		int errorStart = location.getStart() - line.getStart();
+		int errorEnd = errorStart + location.getText().length() - 1;
+		for (int i = 0, n = line.getText().length(); i < n; i++) {
+			message += i >= errorStart && i <= errorEnd ? "^" : " ";
+		}
+
+		throw new RuntimeException(message);
 	}
 }
