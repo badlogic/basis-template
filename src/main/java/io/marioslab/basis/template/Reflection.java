@@ -70,7 +70,7 @@ public abstract class Reflection {
 						} catch (NoSuchFieldException e) {
 							// fall through
 						}
-						parentClass = cls.getSuperclass();
+						parentClass = parentClass.getSuperclass();
 					}
 				}
 			}
@@ -148,7 +148,7 @@ public abstract class Reflection {
 						for (int i = 0; i < 2; i++) {
 							try {
 								if (name == null)
-									method = cls.getDeclaredMethods()[0];
+									method = parentClass.getDeclaredMethods()[0];
 								else
 									method = parentClass.getDeclaredMethod(name, parameterTypes[i]);
 								method.setAccessible(true);
@@ -158,7 +158,7 @@ public abstract class Reflection {
 								// fall through
 							}
 						}
-						parentClass = cls.getSuperclass();
+						parentClass = parentClass.getSuperclass();
 					}
 				}
 			}

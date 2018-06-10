@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +21,10 @@ import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
 import io.marioslab.basis.template.parsing.Ast.ForStatement;
 import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.IfStatement;
+import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
 import io.marioslab.basis.template.parsing.Ast.LongLiteral;
+import io.marioslab.basis.template.parsing.Ast.Macro;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
@@ -37,6 +38,8 @@ import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
 import io.marioslab.basis.template.parsing.Ast.UnaryOperation.UnaryOperator;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
 import io.marioslab.basis.template.parsing.Ast.WhileStatement;
+import io.marioslab.basis.template.parsing.Parser.Macros;
+import io.marioslab.basis.template.parsing.Span;
 
 public class AstInterpreter {
 	public void interpret (Template template, TemplateContext context, OutputStream out) {
@@ -59,6 +62,7 @@ public class AstInterpreter {
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
 	private Object interpretNode (Node node, Template template, TemplateContext context, Writer out) throws IOException {
 		// TODO wrap node interpretation blocks into try/catch and rethrow with location info.
 		if (node instanceof Text) {
@@ -153,41 +157,101 @@ public class AstInterpreter {
 			MethodCall methodCall = (MethodCall)node;
 			Object object = interpretNode(methodCall.getObject(), template, context, out);
 			if (object == null) Error.error("Couldn't find object in context.", methodCall.getSpan());
-			Object[] args = new Object[methodCall.getArguments().size()];
+
+			Object[] argumentValues = new Object[methodCall.getArguments().size()];
 			List<Expression> arguments = methodCall.getArguments();
-			for (int i = 0, n = args.length; i < n; i++) {
+			for (int i = 0, n = argumentValues.length; i < n; i++) {
 				Expression expr = arguments.get(i);
-				args[i] = interpretNode(expr, template, context, out);
+				argumentValues[i] = interpretNode(expr, template, context, out);
 			}
-			Object method = Reflection.getInstance().getMethod(object, methodCall.getMethod().getName().getText(), args);
-			if (method == null) {
+
+			// if the object we call the method on is a Macros instance, lookup the macro by name
+			// and execute its node list
+			if (object instanceof Macros) {
+				Macros macros = (Macros)object;
+				Macro macro = macros.get(methodCall.getMethod().getName().getText());
+				if (macro != null) {
+					if (macro.getArgumentNames().size() != arguments.size())
+						Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), methodCall.getSpan());
+					TemplateContext macroContext = macro.getMacroContext();
+					for (int i = 0; i < arguments.size(); i++) {
+						Object arg = argumentValues[i];
+						String name = macro.getArgumentNames().get(i).getText();
+						macroContext.set(name, arg);
+					}
+					interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+					return null;
+				}
+			}
+
+			// Otherwise try to find a corresponding method or field pointing to a lambda.
+			Object method = Reflection.getInstance().getMethod(object, methodCall.getMethod().getName().getText(), argumentValues);
+			if (method != null) {
+				// found the method on the object, call it
+				return Reflection.getInstance().callMethod(object, method, argumentValues);
+			} else {
+				// didn't find the method on the object, try to find a field pointing to a lambda
 				Object field = Reflection.getInstance().getField(object, methodCall.getMethod().getName().getText());
 				if (field == null) Error.error(
 					"Couldn't find method '" + methodCall.getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
 					methodCall.getSpan());
 				Object function = Reflection.getInstance().getFieldValue(object, field);
-				method = Reflection.getInstance().getMethod(function, null, args);
+				method = Reflection.getInstance().getMethod(function, null, argumentValues);
 				if (method == null) Error.error("Couldn't find function in field '" + methodCall.getMethod().getName().getText() + "' for object of type '"
 					+ object.getClass().getSimpleName() + "'.", node.getSpan());
-				return Reflection.getInstance().callMethod(function, method, args);
+				return Reflection.getInstance().callMethod(function, method, argumentValues);
 			}
-			return Reflection.getInstance().callMethod(object, method, args);
 
 		} else if (node instanceof FunctionCall) {
 			// TODO calls to macros
 
 			FunctionCall call = (FunctionCall)node;
-			Object function = interpretNode(call.getFunction(), template, context, out);
-			if (function == null) Error.error("Couldn't find function.", node.getSpan());
-			Object[] args = new Object[call.getArguments().size()];
+			Object[] argumentValues = new Object[call.getArguments().size()];
 			List<Expression> arguments = call.getArguments();
-			for (int i = 0, n = args.length; i < n; i++) {
+			for (int i = 0, n = argumentValues.length; i < n; i++) {
 				Expression expr = arguments.get(i);
-				args[i] = interpretNode(expr, template, context, out);
+				argumentValues[i] = interpretNode(expr, template, context, out);
 			}
-			Object method = Reflection.getInstance().getMethod(function, null, args);
-			if (method == null) Error.error("Couldn't find function.", node.getSpan());
-			return Reflection.getInstance().callMethod(function, method, args);
+
+			// This is a special case to handle template level macros. If a call to a macro is
+			// made, evaluating the function expression will result in an exception, as the
+			// function name can't be found in the context. Instead we need to manually check
+			// if the function expression is a VariableAccess and if so, if it can be found
+			// in the context.
+			Object function = null;
+			if (call.getFunction() instanceof VariableAccess) {
+				VariableAccess varAccess = (VariableAccess)call.getFunction();
+				function = context.get(varAccess.getVariableName().getText());
+			} else {
+				function = interpretNode(call.getFunction(), template, context, out);
+			}
+
+			if (function != null) {
+				Object method = Reflection.getInstance().getMethod(function, null, argumentValues);
+				if (method == null) Error.error("Couldn't find function.", node.getSpan());
+				return Reflection.getInstance().callMethod(function, method, argumentValues);
+			} else {
+				// Check if this is a call to a macro defined in this template
+				if (call.getFunction() instanceof VariableAccess) {
+					String functionName = ((VariableAccess)call.getFunction()).getVariableName().getText();
+					Macros macros = template.getMacros();
+					Macro macro = macros.get(functionName);
+					if (macro != null) {
+						if (macro.getArgumentNames().size() != arguments.size())
+							Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), call.getSpan());
+						TemplateContext macroContext = macro.getMacroContext();
+						for (int i = 0; i < arguments.size(); i++) {
+							Object arg = argumentValues[i];
+							String name = macro.getArgumentNames().get(i).getText();
+							macroContext.set(name, arg);
+						}
+						interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+						return null;
+					}
+				}
+				Error.error("Couldn't find function.", node.getSpan());
+				return null; // never reached
+			}
 
 		} else if (node instanceof UnaryOperation) {
 			UnaryOperation op = (UnaryOperation)node;
@@ -457,7 +521,7 @@ public class AstInterpreter {
 			if (mapOrArray instanceof Map) {
 				Map map = (Map)mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (Object entry : map.entrySet()) {
 						Entry e = (Entry)entry;
@@ -474,7 +538,7 @@ public class AstInterpreter {
 				}
 			} else if (mapOrArray instanceof Iterable) {
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					Iterator iter = ((Iterable)mapOrArray).iterator();
 					int i = 0;
@@ -494,7 +558,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof int[]) {
 				int[] array = (int[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -511,7 +575,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof float[]) {
 				float[] array = (float[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -528,7 +592,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof double[]) {
 				double[] array = (double[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -545,7 +609,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof boolean[]) {
 				boolean[] array = (boolean[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -562,7 +626,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof char[]) {
 				char[] array = (char[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -579,7 +643,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof short[]) {
 				short[] array = (short[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -596,7 +660,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof byte[]) {
 				byte[] array = (byte[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -613,7 +677,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof long[]) {
 				long[] array = (long[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -630,7 +694,7 @@ public class AstInterpreter {
 			} else if (mapOrArray instanceof Object[]) {
 				Object[] array = (Object[])mapOrArray;
 				if (forStatement.getIndexOrKeyName() != null) {
-					context.push(new HashMap<String, Object>());
+					context.push();
 					String keyName = forStatement.getIndexOrKeyName().getText();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.set(keyName, i);
@@ -682,6 +746,29 @@ public class AstInterpreter {
 				if (!((Boolean)condition)) break;
 				interpretNodeList(whileStatement.getBody(), template, context, out);
 			}
+			return null;
+		} else if (node instanceof Include) {
+			Include include = (Include)node;
+			Template other = include.getTemplate();
+
+			if (!include.isMacrosOnly()) {
+				if (include.getContext().isEmpty()) {
+					interpretNodeList(other.getNodes(), other, context, out);
+				} else {
+					TemplateContext otherContext = new TemplateContext();
+					for (Span span : include.getContext().keySet()) {
+						String key = span.getText();
+						Object value = interpretNode(include.getContext().get(span), template, context, out);
+						otherContext.set(key, value);
+					}
+					interpretNodeList(other.getNodes(), other, otherContext, out);
+				}
+			} else {
+				context.set(include.getAlias().getText(), include.getTemplate().getMacros());
+			}
+			return null;
+		} else if (node instanceof Macro) {
+			// Do nothing for macros
 			return null;
 		} else {
 			Error.error("Interpretation of node " + node.getClass().getSimpleName() + " not implemented.", node.getSpan());

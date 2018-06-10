@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.Template;
+import io.marioslab.basis.template.TemplateContext;
 
 public abstract class Ast {
 	public static class Node {
@@ -419,7 +421,7 @@ public abstract class Ast {
 			this.body = body;
 		}
 
-		/** May return null **/
+		/** Returns null if no index or key name was given **/
 		public Span getIndexOrKeyName () {
 			return indexOrKeyName;
 		}
@@ -460,6 +462,8 @@ public abstract class Ast {
 		private final Span name;
 		private final List<Span> argumentNames;
 		private final List<Node> body;
+		private final TemplateContext macroContext = new TemplateContext();
+		private Template template;
 
 		public Macro (Span span, Span name, List<Span> argumentNames, List<Node> body) {
 			super(span);
@@ -479,24 +483,60 @@ public abstract class Ast {
 		public List<Node> getBody () {
 			return body;
 		}
+
+		public TemplateContext getMacroContext () {
+			return macroContext;
+		}
+
+		public void setTemplate (Template template) {
+			this.template = template;
+		}
+
+		/** The template of the macro is set after the entire template has been parsed. See the Template constructor. **/
+		public Template getTemplate () {
+			return template;
+		}
 	}
 
 	public static class Include extends Node {
 		private final Span path;
 		private final Map<Span, Expression> context;
+		private Template template;
+		private final boolean macrosOnly;
+		private final Span alias;
 
-		public Include (Span span, Span path, Map<Span, Expression> context) {
+		public Include (Span span, Span path, Map<Span, Expression> context, boolean macrosOnly, Span alias) {
 			super(span);
 			this.path = path;
 			this.context = context;
+			this.macrosOnly = macrosOnly;
+			this.alias = alias;
 		}
 
 		public Span getPath () {
 			return path;
 		}
 
+		/** Returns null if macrosOnly is true **/
 		public Map<Span, Expression> getContext () {
 			return context;
+		}
+
+		public Template getTemplate () {
+			return template;
+		}
+
+		public void setTemplate (Template template) {
+			this.template = template;
+		}
+
+		public boolean isMacrosOnly () {
+			return macrosOnly;
+		}
+
+		/** Returns null if macrosOnly is false **/
+		public Span getAlias () {
+			return alias;
 		}
 	}
 }

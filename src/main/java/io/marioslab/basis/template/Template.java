@@ -7,32 +7,35 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.Macro;
 import io.marioslab.basis.template.parsing.Ast.Node;
-import io.marioslab.basis.template.parsing.Parser;
-import io.marioslab.basis.template.parsing.Parser.ParserResult;
+import io.marioslab.basis.template.parsing.Parser.Macros;
 
 public class Template {
 	private final List<Node> nodes;
-	private final List<Macro> macros;
-	private final TemplateLoader loader;
+	private final Macros macros;
+	private final List<Include> includes;
 
-	Template (List<Node> nodes, List<Macro> macros, TemplateLoader loader) {
+	Template (List<Node> nodes, Macros macros, List<Include> includes) {
 		this.nodes = nodes;
 		this.macros = macros;
-		this.loader = loader;
+		this.includes = includes;
+
+		for (Macro macro : macros.values())
+			macro.setTemplate(this);
 	}
 
 	List<Node> getNodes () {
 		return nodes;
 	}
 
-	List<Macro> getMacros () {
+	Macros getMacros () {
 		return macros;
 	}
 
-	TemplateLoader getLoader () {
-		return loader;
+	public List<Include> getIncludes () {
+		return includes;
 	}
 
 	public String render (TemplateContext context) {
@@ -50,10 +53,5 @@ public class Template {
 
 	public void render (TemplateContext context, OutputStream out) {
 		new AstInterpreter().interpret(this, context, out);
-	}
-
-	public static Template load (String path, TemplateLoader loader) {
-		ParserResult result = new Parser().parse(loader.load(path));
-		return new Template(result.getNodes(), result.getMacros(), loader);
 	}
 }

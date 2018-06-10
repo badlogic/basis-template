@@ -40,6 +40,7 @@ import io.marioslab.basis.template.parsing.Ast.UnaryOperation.UnaryOperator;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
 import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 import io.marioslab.basis.template.parsing.Parser;
+import io.marioslab.basis.template.parsing.Parser.Macros;
 import io.marioslab.basis.template.parsing.Parser.ParserResult;
 import io.marioslab.basis.template.parsing.Span;
 
@@ -477,7 +478,7 @@ public class ParserTest {
 	public void testMacro () {
 		ParserResult template = new Parser().parse("{{ macro myMacro(a, b, c) }} true body {{expr}} {{ end }}");
 		List<Node> nodes = template.getNodes();
-		List<Macro> macros = template.getMacros();
+		Macros macros = template.getMacros();
 
 		assertEquals(1, nodes.size());
 		Macro macro = (Macro)nodes.get(0);
@@ -492,7 +493,7 @@ public class ParserTest {
 		assertEquals(Text.class, macro.getBody().get(2).getClass());
 
 		assertEquals(1, macros.size());
-		macro = macros.get(0);
+		macro = macros.get("myMacro");
 		assertEquals(3, macro.getArgumentNames().size());
 		assertEquals("a", macro.getArgumentNames().get(0).getText());
 		assertEquals("b", macro.getArgumentNames().get(1).getText());
@@ -533,5 +534,17 @@ public class ParserTest {
 			}
 		}
 		assertEquals(0, keys.size());
+	}
+
+	@Test
+	public void testIncludeMacros () {
+		List<Node> nodes = new Parser().parse("{{ include \"othertemplate.html\" as math }}").getNodes();
+		assertEquals(1, nodes.size());
+
+		Include inc = (Include)nodes.get(0);
+		assertEquals("\"othertemplate.html\"", inc.getPath().getText());
+		assertNull(inc.getContext());
+		assertTrue(inc.isMacrosOnly());
+		assertEquals("math", inc.getAlias().getText());
 	}
 }

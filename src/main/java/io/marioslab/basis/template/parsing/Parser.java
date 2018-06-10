@@ -38,37 +38,38 @@ public class Parser {
 
 	public ParserResult parse (String source) {
 		List<Node> nodes = new ArrayList<Node>();
-		List<Macro> macros = new ArrayList<Macro>();
+		Macros macros = new Macros();
+		List<Include> includes = new ArrayList<Include>();
 		TokenStream stream = new TokenStream(new Tokenizer().tokenize(source));
 
 		while (stream.hasMore()) {
-			nodes.add(parseStatement(stream, true, macros));
+			nodes.add(parseStatement(stream, true, macros, includes));
 		}
-		return new ParserResult(nodes, macros);
+		return new ParserResult(nodes, macros, includes);
 	}
 
-	private Node parseStatement (TokenStream tokens, boolean allowMacros, List<Macro> macros) {
+	private Node parseStatement (TokenStream tokens, boolean allowMacros, Macros macros, List<Include> includes) {
 		Node result = null;
 
 		if (tokens.match(TokenType.TextBlock, false))
 			result = new Text(tokens.consume().getSpan());
 		else if (tokens.match("if", false))
-			result = parseIfStatement(tokens);
+			result = parseIfStatement(tokens, includes);
 		else if (tokens.match("for", false))
-			result = parseForStatement(tokens);
+			result = parseForStatement(tokens, includes);
 		else if (tokens.match("while", false))
-			result = parseWhileStatement(tokens);
+			result = parseWhileStatement(tokens, includes);
 		else if (tokens.match("macro", false)) {
 			if (!allowMacros) {
 				Error.error("Macros can only be defined at the top level of a template.", tokens.consume().getSpan());
 				result = null; // never reached
 			} else {
-				Macro macro = parseMacro(tokens);
-				macros.add(macro);
+				Macro macro = parseMacro(tokens, includes);
+				macros.put(macro.getName().getText(), macro);
 				result = macro; //
 			}
 		} else if (tokens.match("include", false))
-			result = parseInclude(tokens);
+			result = parseInclude(tokens, includes);
 		else
 			result = parseExpression(tokens);
 
@@ -79,14 +80,14 @@ public class Parser {
 		return result;
 	}
 
-	private IfStatement parseIfStatement (TokenStream stream) {
+	private IfStatement parseIfStatement (TokenStream stream, List<Include> includes) {
 		Span openingIf = stream.expect("if").getSpan();
 
 		Expression condition = parseExpression(stream);
 
 		List<Node> trueBlock = new ArrayList<Node>();
 		while (stream.hasMore() && !stream.match(false, "elseif", "else", "end")) {
-			trueBlock.add(parseStatement(stream, false, null));
+			trueBlock.add(parseStatement(stream, false, null, includes));
 		}
 
 		List<IfStatement> elseIfs = new ArrayList<IfStatement>();
@@ -97,7 +98,7 @@ public class Parser {
 
 			List<Node> elseIfBlock = new ArrayList<Node>();
 			while (stream.hasMore() && !stream.match(false, "elseif", "else", "end")) {
-				elseIfBlock.add(parseStatement(stream, false, null));
+				elseIfBlock.add(parseStatement(stream, false, null, includes));
 			}
 
 			Span elseIfSpan = new Span(elseIfOpening, elseIfBlock.size() > 0 ? elseIfBlock.get(elseIfBlock.size() - 1).getSpan() : elseIfOpening);
@@ -107,7 +108,7 @@ public class Parser {
 		List<Node> falseBlock = new ArrayList<Node>();
 		if (stream.match("else", true)) {
 			while (stream.hasMore() && !stream.match(false, "end")) {
-				falseBlock.add(parseStatement(stream, false, null));
+				falseBlock.add(parseStatement(stream, false, null, includes));
 			}
 		}
 
@@ -116,7 +117,7 @@ public class Parser {
 		return new IfStatement(new Span(openingIf, closingEnd), condition, trueBlock, elseIfs, falseBlock);
 	}
 
-	private ForStatement parseForStatement (TokenStream stream) {
+	private ForStatement parseForStatement (TokenStream stream, List<Include> includes) {
 		Span openingFor = stream.expect("for").getSpan();
 
 		Span index = null;
@@ -133,7 +134,7 @@ public class Parser {
 
 		List<Node> body = new ArrayList<Node>();
 		while (stream.hasMore() && !stream.match(false, "end")) {
-			body.add(parseStatement(stream, false, null));
+			body.add(parseStatement(stream, false, null, includes));
 		}
 
 		Span closingEnd = stream.expect("end").getSpan();
@@ -141,14 +142,14 @@ public class Parser {
 		return new ForStatement(new Span(openingFor, closingEnd), index != null ? index : null, value, mapOrArray, body);
 	}
 
-	private WhileStatement parseWhileStatement (TokenStream stream) {
+	private WhileStatement parseWhileStatement (TokenStream stream, List<Include> includes) {
 		Span openingWhile = stream.expect("while").getSpan();
 
 		Expression condition = parseExpression(stream);
 
 		List<Node> body = new ArrayList<Node>();
 		while (stream.hasMore() && !stream.match(false, "end")) {
-			body.add(parseStatement(stream, false, null));
+			body.add(parseStatement(stream, false, null, includes));
 		}
 
 		Span closingEnd = stream.expect("end").getSpan();
@@ -156,7 +157,7 @@ public class Parser {
 		return new WhileStatement(new Span(openingWhile, closingEnd), condition, body);
 	}
 
-	private Macro parseMacro (TokenStream stream) {
+	private Macro parseMacro (TokenStream stream, List<Include> includes) {
 		Span openingWhile = stream.expect("macro").getSpan();
 
 		Span name = stream.expect(TokenType.Identifier).getSpan();
@@ -167,7 +168,7 @@ public class Parser {
 
 		List<Node> body = new ArrayList<Node>();
 		while (stream.hasMore() && !stream.match(false, "end")) {
-			body.add(parseStatement(stream, false, null));
+			body.add(parseStatement(stream, false, null, includes));
 		}
 
 		Span closingEnd = stream.expect("end").getSpan();
@@ -186,17 +187,25 @@ public class Parser {
 		return arguments;
 	}
 
-	private Include parseInclude (TokenStream stream) {
+	private Include parseInclude (TokenStream stream, List<Include> includes) {
 		Span openingInclude = stream.expect("include").getSpan();
 		Span path = stream.expect(TokenType.StringLiteral).getSpan();
 		Span closing = path;
 
-		Map<Span, Expression> context = new HashMap<Span, Expression>();
+		Include include = null;
 		if (stream.match("with", true)) {
-			context = parseMap(stream);
+			Map<Span, Expression> context = parseMap(stream);
 			closing = stream.expect(TokenType.RightParantheses).getSpan();
+			include = new Include(new Span(openingInclude, closing), path, context, false, null);
+		} else if (stream.match("as", true)) {
+			Span alias = stream.expect(TokenType.Identifier).getSpan();
+			closing = alias;
+			include = new Include(new Span(openingInclude, closing), path, null, true, alias);
+		} else {
+			include = new Include(new Span(openingInclude, closing), path, new HashMap<Span, Expression>(), false, null);
 		}
-		return new Include(new Span(openingInclude, closing), path, context);
+		includes.add(include);
+		return include;
 	}
 
 	/** Does not consume the closing parentheses. **/
@@ -339,21 +348,30 @@ public class Parser {
 		return arguments;
 	}
 
+	public static class Macros extends HashMap<String, Macro> {
+	}
+
 	public static class ParserResult {
 		private final List<Node> nodes;
-		private final List<Macro> macros;
+		private final Macros macros;
+		private final List<Include> includes;
 
-		public ParserResult (List<Node> nodes, List<Macro> macros) {
+		public ParserResult (List<Node> nodes, Macros macros, List<Include> includes) {
 			this.nodes = nodes;
 			this.macros = macros;
+			this.includes = includes;
 		}
 
 		public List<Node> getNodes () {
 			return nodes;
 		}
 
-		public List<Macro> getMacros () {
+		public Macros getMacros () {
 			return macros;
+		}
+
+		public List<Include> getIncludes () {
+			return includes;
 		}
 	}
 }

@@ -50,7 +50,7 @@ public class InterpreterTest {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		loader.set("hello",
 			"Hello {{null}}, {{true}}, {{1234}}, {{12.34}}, {{123b}}, {{123s}}, {{123l}}, {{123f}}, {{123d}}, {{123.0d}}, {{'a'}}, {{'\\n'}}, {{\"world\"}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(new TemplateContext());
 		assertEquals("Hello , true, 1234, 12.34, 123, 123, 123, 123.0, 123.0, 123.0, a, \n, world", result);
 	}
@@ -59,7 +59,7 @@ public class InterpreterTest {
 	public void testVariableAccess () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		loader.set("hello", "{{boolean}}, {{integer}}, {{float}}, {{string}}, {{object}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext().set("boolean", false).set("integer", 12345).set("float", 123.45).set("string", "hello").set("object",
 			new MyObject());
 		String result = template.render(context);
@@ -70,7 +70,7 @@ public class InterpreterTest {
 	public void testArrayAccess () {
 		MapTemplateLoader loader = new MapTemplateLoader().set("hello",
 			"{{boolean[0]}}, {{char[0]}}, {{short[0]}}, {{int[0]}}, {{long[0]}}, {{float[0]}}, {{double[0]}}, {{string[0]}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext();
 		context.set("boolean", new boolean[] {true});
 		context.set("char", new char[] {'a'});
@@ -87,7 +87,7 @@ public class InterpreterTest {
 	@Test
 	public void testMultiArrayAccess () {
 		TemplateLoader loader = new MapTemplateLoader().set("hello", "{{multi[0][0]}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext();
 		context.set("multi", new String[][] {new String[] {"hello"}});
 		String result = template.render(context);
@@ -97,7 +97,7 @@ public class InterpreterTest {
 	@Test
 	public void testListAccess () {
 		TemplateLoader loader = new MapTemplateLoader().set("hello", "{{list[0]}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext();
 		List<String> list = new ArrayList<String>();
 		list.add("hello");
@@ -111,7 +111,7 @@ public class InterpreterTest {
 		MapTemplateLoader loader = new MapTemplateLoader();
 
 		loader.set("hello", "{{map[\"key\"]}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext();
 		Map<String, String> map = new HashMap<String, String>();
 		map.put("key", "hello");
@@ -126,7 +126,7 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{object.field1 object.field2 object.field3 object.other.a object.text}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		context.set("object", new MyObject());
 		String result = template.render(context);
 		assertEquals("123456789123.456Test", result);
@@ -138,7 +138,7 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{object.getField2()}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		context.set("object", new MyObject());
 		String result = template.render(context);
 		assertEquals("456", result);
@@ -150,13 +150,13 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{object.add(1, 2)}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		context.set("object", new MyObject());
 		String result = template.render(context);
 		assertEquals("3", result);
 
 		loader.set("hello2", "{{object.add(\"Hello \", \"world\")}}");
-		template = Template.load("hello2", loader);
+		template = loader.load("hello2");
 		result = template.render(context);
 		assertEquals("Hello world", result);
 	}
@@ -166,7 +166,7 @@ public class InterpreterTest {
 		MapTemplateLoader loader = new MapTemplateLoader();
 
 		loader.set("hello", "{{Math.abs(123) \" \" Math.abs(1.23)}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext();
 		context.set("Math", Math.class);
 		String result = template.render(context);
@@ -179,19 +179,19 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{abs(123)}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		context.set("abs", (IntFunction)Math::abs);
 		String result = template.render(context);
 		assertEquals("123", result);
 
 		loader.set("hello2", "{{array[0](123)}}");
-		template = Template.load("hello2", loader);
+		template = loader.load("hello2");
 		context.set("array", new IntFunction[] {Math::abs});
 		result = template.render(context);
 		assertEquals("123", result);
 
 		loader.set("hello3", "{{object.func(123)}}");
-		template = Template.load("hello3", loader);
+		template = loader.load("hello3");
 		context.set("object", new MyObject());
 		result = template.render(context);
 		assertEquals("123", result);
@@ -203,17 +203,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{+(1)}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("1", result);
 
 		loader.set("hello", "{{-(1)}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("-1", result);
 
 		loader.set("hello", "{{!true}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("false", result);
 	}
@@ -224,27 +224,27 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{1 + 1}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("2", result);
 
 		loader.set("hello", "{{1.0 + 1}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("2.0", result);
 
 		loader.set("hello", "{{1l + 1b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("2", result);
 
 		loader.set("hello", "{{\"hello\" + 1}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("hello1", result);
 
 		loader.set("hello", "{{\"hello\" + \" world\"}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("hello world", result);
 	}
@@ -255,17 +255,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{1 - 1}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("0", result);
 
 		loader.set("hello", "{{1.0 - 1}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("0.0", result);
 
 		loader.set("hello", "{{1l - 1b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("0", result);
 	}
@@ -276,17 +276,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 * 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("6", result);
 
 		loader.set("hello", "{{3.0 * 2}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("6.0", result);
 
 		loader.set("hello", "{{2l * 3b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("6", result);
 	}
@@ -297,17 +297,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 / 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + 2 / 3, result);
 
 		loader.set("hello", "{{3.0 / 2}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + 3.0 / 2, result);
 
 		loader.set("hello", "{{2l / 3b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + 2l / (byte)3, result);
 	}
@@ -318,17 +318,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 % 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + 2 % 3, result);
 
 		loader.set("hello", "{{3.0 % 2}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + 3.0 % 2, result);
 
 		loader.set("hello", "{{2l % 3b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + 2l % (byte)3, result);
 	}
@@ -339,17 +339,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 < 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (2 < 3), result);
 
 		loader.set("hello", "{{3.0f < 3}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (3.0f < 3), result);
 
 		loader.set("hello", "{{2l < 3b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (2l < (byte)3), result);
 	}
@@ -360,17 +360,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 <= 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (2 < 3), result);
 
 		loader.set("hello", "{{3.0f <= 3}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (3.0f <= 3), result);
 
 		loader.set("hello", "{{2l <= 3b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (2l <= (byte)3), result);
 	}
@@ -381,17 +381,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 > 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (2 > 3), result);
 
 		loader.set("hello", "{{4.0f > 3}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (4.0f > 3), result);
 
 		loader.set("hello", "{{3l > 2b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (3l > (byte)2), result);
 	}
@@ -402,17 +402,17 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 >= 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (2 >= 3), result);
 
 		loader.set("hello", "{{4.0f >= 3}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (4.0f >= 3), result);
 
 		loader.set("hello", "{{3l >= 2b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (3l >= (byte)2), result);
 	}
@@ -423,22 +423,22 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 == 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (2 == 3), result);
 
 		loader.set("hello", "{{3.0f == 3.0}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (3.0f == 3.0), result);
 
 		loader.set("hello", "{{2l == 2b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (2l == (byte)3), result);
 
 		loader.set("hello", "{{\"hello\" == \"hello\"}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + ("hello".equals("hello")), result);
 	}
@@ -449,22 +449,22 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{2 != 3}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (2 != 3), result);
 
 		loader.set("hello", "{{3.0f != 3.0}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (3.0f != 3.0), result);
 
 		loader.set("hello", "{{2l != 2b}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (2l != (byte)3), result);
 
 		loader.set("hello", "{{\"hello\" != \"hello\"}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + !("hello".equals("hello")), result);
 	}
@@ -475,12 +475,12 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{true && false}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (true && false), result);
 
 		loader.set("hello", "{{true && true}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (true && true), result);
 	}
@@ -491,12 +491,12 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{true || false}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (true || false), result);
 
 		loader.set("hello", "{{false || true}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (false || true), result);
 	}
@@ -507,7 +507,7 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{true ^ false}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (true ^ false), result);
 	}
@@ -518,7 +518,7 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{a = 123}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("", result);
 		assertEquals(123, context.get("a"));
@@ -530,12 +530,12 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{true ? 1 : 2}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		String result = template.render(context);
 		assertEquals("" + (true ? 1 : 2), result);
 
 		loader.set("hello", "{{false ? 1 : 2}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("" + (false ? 1 : 2), result);
 	}
@@ -546,7 +546,7 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{ for v in map }}value: {{v}}\n{{end}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		map.put("a", 1);
 		map.put("b", 2);
@@ -556,120 +556,120 @@ public class InterpreterTest {
 		assertEquals("value: 1\nvalue: 2\nvalue: 3\n", result);
 
 		loader.set("hello", "{{ for k, v in map }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("a: 1\nb: 2\nc: 3\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new boolean[] {true, false, true});
 		result = template.render(context);
 		assertEquals("true\nfalse\ntrue\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new boolean[] {true, false, true});
 		result = template.render(context);
 		assertEquals("0: true\n1: false\n2: true\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new char[] {'x', 'y', 'z'});
 		result = template.render(context);
 		assertEquals("x\ny\nz\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new char[] {'x', 'y', 'z'});
 		result = template.render(context);
 		assertEquals("0: x\n1: y\n2: z\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new byte[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("10\n11\n12\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new byte[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("0: 10\n1: 11\n2: 12\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new short[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("10\n11\n12\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new short[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("0: 10\n1: 11\n2: 12\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new int[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("10\n11\n12\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new int[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("0: 10\n1: 11\n2: 12\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new long[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("10\n11\n12\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new long[] {10, 11, 12});
 		result = template.render(context);
 		assertEquals("0: 10\n1: 11\n2: 12\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new float[] {1.2f, 2.3f, 3.4f});
 		result = template.render(context);
 		assertEquals("1.2\n2.3\n3.4\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new float[] {1.2f, 2.3f, 3.4f});
 		result = template.render(context);
 		assertEquals("0: 1.2\n1: 2.3\n2: 3.4\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new double[] {1.2, 2.3, 3.4});
 		result = template.render(context);
 		assertEquals("1.2\n2.3\n3.4\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new String[] {"aa", "bb", "cc"});
 		result = template.render(context);
 		assertEquals("aa\nbb\ncc\n", result);
 
 		loader.set("hello", "{{ for k, v in array }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("array", new String[] {"aa", "bb", "cc"});
 		result = template.render(context);
 		assertEquals("0: aa\n1: bb\n2: cc\n", result);
 
 		loader.set("hello", "{{ for v in array }}{{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("list", Arrays.asList("aa", "bb", "cc"));
 		result = template.render(context);
 		assertEquals("aa\nbb\ncc\n", result);
 
 		loader.set("hello", "{{ for k, v in list }}{{k}}: {{v}}\n{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		context.set("list", Arrays.asList("aa", "bb", "cc"));
 		result = template.render(context);
 		assertEquals("0: aa\n1: bb\n2: cc\n", result);
@@ -681,28 +681,28 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{if true}}test{{end}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		Map<String, Integer> map = new HashMap<String, Integer>();
 		String result = template.render(context);
 		assertEquals("test", result);
 
 		loader.set("hello", "{{if false}}test{{else}}test2{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("test2", result);
 
 		loader.set("hello", "{{if false}}test{{elseif false}}test2{{elseif true}}test3{{else}}test4{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("test3", result);
 
 		loader.set("hello", "{{if false}}test{{elseif false}}test2{{elseif false}}test3{{else}}test4{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("test4", result);
 
 		loader.set("hello", "{{if false}}test{{elseif false}}test2{{elseif true}}{{if false}}test3{{else}}test4{{end}}{{else}}test5{{end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("test4", result);
 	}
@@ -713,14 +713,49 @@ public class InterpreterTest {
 		TemplateContext context = new TemplateContext();
 
 		loader.set("hello", "{{while (iter.hasNext()) iter.next() end}}");
-		Template template = Template.load("hello", loader);
+		Template template = loader.load("hello");
 		context.set("iter", Arrays.asList("aa", "bb", "cc").iterator());
 		String result = template.render(context);
 		assertEquals("aabbcc", result);
 
 		loader.set("hello", "{{ i = 10; while (i >= 0) i = i - 1; i; end}}");
-		template = Template.load("hello", loader);
+		template = loader.load("hello");
 		result = template.render(context);
 		assertEquals("9876543210-1", result);
+	}
+
+	@Test
+	public void testInclude () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{i = 0; while (i < 10) include \"hello2\"; i = i + 1; end}}");
+		loader.set("hello2", "{{i}}");
+		Template template = loader.load("hello");
+		String result = template.render(context);
+		assertEquals("0123456789", result);
+
+		loader.set("hello", "{{i = 0; while (i < 10) include \"hello2\" with ( i: 7 ); i = i + 1; end}}");
+		loader.set("hello2", "{{i}}");
+		template = loader.load("hello");
+		result = template.render(context);
+		assertEquals("7777777777", result);
+	}
+
+	@Test
+	public void testMacros () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{ include \"hello2\" as math; math.helloWorld(1, \"test\")}}");
+		loader.set("hello2", "{{ macro helloWorld(num, text) num \":\" text end }}");
+		Template template = loader.load("hello");
+		String result = template.render(context);
+		assertEquals("1:test", result);
+
+		loader.set("hello", "{{macro helloWorld(num, text) num \":\" toUpper(text) end macro toUpper(text) text.toUpperCase() end helloWorld(1, \"test\")}}");
+		template = loader.load("hello");
+		result = template.render(context);
+		assertEquals("1:TEST", result);
 	}
 }
