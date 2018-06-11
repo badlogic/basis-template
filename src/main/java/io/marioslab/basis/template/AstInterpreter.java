@@ -734,77 +734,77 @@ public class AstInterpreter {
 
 	@SuppressWarnings("rawtypes")
 	private static Object interpretNode (Node node, Template template, TemplateContext context, Writer out) throws IOException {
-		if (node instanceof Text) {
+		if (node.getClass() == Text.class) {
 			out.write(((Text)node).getSpan().getText());
 			return null;
 
-		} else if (node instanceof BooleanLiteral) {
+		} else if (node.getClass() == BooleanLiteral.class) {
 			return ((BooleanLiteral)node).getValue();
 
-		} else if (node instanceof DoubleLiteral) {
+		} else if (node.getClass() == DoubleLiteral.class) {
 			return ((DoubleLiteral)node).getValue();
 
-		} else if (node instanceof FloatLiteral) {
+		} else if (node.getClass() == FloatLiteral.class) {
 			return ((FloatLiteral)node).getValue();
 
-		} else if (node instanceof ByteLiteral) {
+		} else if (node.getClass() == ByteLiteral.class) {
 			return ((ByteLiteral)node).getValue();
 
-		} else if (node instanceof ShortLiteral) {
+		} else if (node.getClass() == ShortLiteral.class) {
 			return ((ShortLiteral)node).getValue();
 
-		} else if (node instanceof IntegerLiteral) {
+		} else if (node.getClass() == IntegerLiteral.class) {
 			return ((IntegerLiteral)node).getValue();
 
-		} else if (node instanceof LongLiteral) {
+		} else if (node.getClass() == LongLiteral.class) {
 			return ((LongLiteral)node).getValue();
 
-		} else if (node instanceof CharacterLiteral) {
+		} else if (node.getClass() == CharacterLiteral.class) {
 			return ((CharacterLiteral)node).getValue();
 
-		} else if (node instanceof StringLiteral) {
+		} else if (node.getClass() == StringLiteral.class) {
 			return ((StringLiteral)node).getValue();
 
-		} else if (node instanceof NullLiteral) {
+		} else if (node.getClass() == NullLiteral.class) {
 			return null;
 
-		} else if (node instanceof VariableAccess) {
+		} else if (node.getClass() == VariableAccess.class) {
 			return interpretVariableAccess((VariableAccess)node, template, context, out);
 
-		} else if (node instanceof MapOrArrayAccess) {
+		} else if (node.getClass() == MapOrArrayAccess.class) {
 			return interpretMapOrArrayAccess((MapOrArrayAccess)node, template, context, out);
 
-		} else if (node instanceof MemberAccess) {
+		} else if (node.getClass() == MemberAccess.class) {
 			return interpretMemberAccess((MemberAccess)node, template, context, out);
 
-		} else if (node instanceof MethodCall) {
+		} else if (node.getClass() == MethodCall.class) {
 			return interpretMethodCall((MethodCall)node, template, context, out);
 
-		} else if (node instanceof FunctionCall) {
+		} else if (node.getClass() == FunctionCall.class) {
 			return interpretFunctionCall((FunctionCall)node, template, context, out);
 
-		} else if (node instanceof UnaryOperation) {
+		} else if (node.getClass() == UnaryOperation.class) {
 			return interpretUnaryOperation((UnaryOperation)node, template, context, out);
 
-		} else if (node instanceof BinaryOperation) {
+		} else if (node.getClass() == BinaryOperation.class) {
 			return interpretBinaryOperation((BinaryOperation)node, template, context, out);
 
-		} else if (node instanceof TernaryOperation) {
+		} else if (node.getClass() == TernaryOperation.class) {
 			return interpretTernaryOperation((TernaryOperation)node, template, context, out);
 
-		} else if (node instanceof ForStatement) {
+		} else if (node.getClass() == ForStatement.class) {
 			return interpretFor((ForStatement)node, template, context, out);
 
-		} else if (node instanceof IfStatement) {
+		} else if (node.getClass() == IfStatement.class) {
 			return interpretIf((IfStatement)node, template, context, out);
 
-		} else if (node instanceof WhileStatement) {
+		} else if (node.getClass() == WhileStatement.class) {
 			return interpretWhile((WhileStatement)node, template, context, out);
 
-		} else if (node instanceof Include) {
+		} else if (node.getClass() == Include.class) {
 			return interpretInclude((Include)node, template, context, out);
 
-		} else if (node instanceof Macro) {
+		} else if (node.getClass() == Macro.class) {
 			// Do nothing for macros
 			return null;
 		} else {
