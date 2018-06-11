@@ -55,7 +55,7 @@ public class AstInterpreter {
 			Node node = nodes.get(i);
 			Object value = interpretNode(node, template, context, out);
 			if (value != null) {
-				out.write(String.valueOf(value).getBytes("UTF-8"));
+				out.write(value.toString().getBytes("UTF-8"));
 			}
 		}
 	}
