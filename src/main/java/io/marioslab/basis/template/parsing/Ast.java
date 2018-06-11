@@ -1,6 +1,7 @@
 
 package io.marioslab.basis.template.parsing;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 
@@ -27,8 +28,19 @@ public abstract class Ast {
 	}
 
 	public static class Text extends Node {
+		private final byte[] bytes;
+
 		public Text (Span text) {
 			super(text);
+			try {
+				bytes = text.getText().getBytes("UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException("Couldn't convert text to UTF-8 string.", e);
+			}
+		}
+
+		public byte[] getBytes () {
+			return bytes;
 		}
 	}
 

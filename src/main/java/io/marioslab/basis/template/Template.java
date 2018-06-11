@@ -39,7 +39,7 @@ public class Template {
 	}
 
 	public String render (TemplateContext context) {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ByteArrayOutputStream out = new ByteArrayOutputStream(2 * 1024);
 		render(context, out);
 		try {
 			out.close();
