@@ -52,6 +52,6 @@ public class Template {
 	}
 
 	public void render (TemplateContext context, OutputStream out) {
-		new AstInterpreter().interpret(this, context, out);
+		AstInterpreter.interpret(this, context, out);
 	}
 }
