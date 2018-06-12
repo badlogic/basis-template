@@ -107,10 +107,20 @@ public class AstInterpreter {
 	private static Object interpretMemberAccess(MemberAccess memberAccess, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object object = interpretNode(memberAccess.getObject(), template, context, out);
 		if (object == null) Error.error("Couldn't find object in context.", memberAccess.getSpan());
-		Object field = Reflection.getInstance().getField(object, memberAccess.getName().getText());
+		Object field = memberAccess.getCachedMember();
+		if (field != null) {
+			try {
+				return Reflection.getInstance().getFieldValue(object, field);
+			} catch (Throwable t) {
+				// fall through
+			}
+		}
+
+		field = Reflection.getInstance().getField(object, memberAccess.getName().getText());
 		if (field == null)
 			Error.error("Couldn't find field '" + memberAccess.getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
 				memberAccess.getSpan());
+		memberAccess.setCachedMember(field);
 		return Reflection.getInstance().getFieldValue(object, field);
 	}
 
@@ -145,9 +155,19 @@ public class AstInterpreter {
 		}
 
 		// Otherwise try to find a corresponding method or field pointing to a lambda.
-		Object method = Reflection.getInstance().getMethod(object, methodCall.getMethod().getName().getText(), argumentValues);
+		Object method = methodCall.getCachedMethod();
+		if (method != null) {
+			try {
+				return Reflection.getInstance().callMethod(object, method, argumentValues);
+			} catch (Throwable t) {
+				// fall through
+			}
+		}
+
+		method = Reflection.getInstance().getMethod(object, methodCall.getMethod().getName().getText(), argumentValues);
 		if (method != null) {
 			// found the method on the object, call it
+			methodCall.setCachedMethod(method);
 			return Reflection.getInstance().callMethod(object, method, argumentValues);
 		} else {
 			// didn't find the method on the object, try to find a field pointing to a lambda
@@ -185,8 +205,17 @@ public class AstInterpreter {
 		}
 
 		if (function != null) {
-			Object method = Reflection.getInstance().getMethod(function, null, argumentValues);
+			Object method = call.getCachedFunction();
+			if (method != null) {
+				try {
+					return Reflection.getInstance().callMethod(function, method, argumentValues);
+				} catch (Throwable t) {
+					// fall through
+				}
+			}
+			method = Reflection.getInstance().getMethod(function, null, argumentValues);
 			if (method == null) Error.error("Couldn't find function.", call.getSpan());
+			call.setCachedFunction(method);
 			return Reflection.getInstance().callMethod(function, method, argumentValues);
 		} else {
 			// Check if this is a call to a macro defined in this template

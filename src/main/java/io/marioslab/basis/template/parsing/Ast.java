@@ -330,6 +330,7 @@ public abstract class Ast {
 	public static class MemberAccess extends Expression {
 		private final Expression object;
 		private final Span name;
+		private Object cachedMember;
 
 		public MemberAccess (Expression object, Span name) {
 			super(name);
@@ -344,11 +345,20 @@ public abstract class Ast {
 		public Span getName () {
 			return name;
 		}
+
+		public Object getCachedMember () {
+			return cachedMember;
+		}
+
+		public void setCachedMember (Object cachedMember) {
+			this.cachedMember = cachedMember;
+		}
 	}
 
 	public static class FunctionCall extends Expression {
 		private final Expression function;
 		private final List<Expression> arguments;
+		private Object cachedFunction;
 
 		public FunctionCall (Span span, Expression function, List<Expression> arguments) {
 			super(span);
@@ -363,11 +373,20 @@ public abstract class Ast {
 		public List<Expression> getArguments () {
 			return arguments;
 		}
+
+		public Object getCachedFunction () {
+			return cachedFunction;
+		}
+
+		public void setCachedFunction (Object cachedFunction) {
+			this.cachedFunction = cachedFunction;
+		}
 	}
 
 	public static class MethodCall extends Expression {
 		private final MemberAccess method;
 		private final List<Expression> arguments;
+		private Object cachedMethod;
 
 		public MethodCall (Span span, MemberAccess method, List<Expression> arguments) {
 			super(span);
@@ -385,6 +404,14 @@ public abstract class Ast {
 
 		public List<Expression> getArguments () {
 			return arguments;
+		}
+
+		public Object getCachedMethod () {
+			return cachedMethod;
+		}
+
+		public void setCachedMethod (Object cachedMethod) {
+			this.cachedMethod = cachedMethod;
 		}
 	}
 
