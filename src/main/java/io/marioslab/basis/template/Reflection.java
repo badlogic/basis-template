@@ -1,9 +1,14 @@
 
 package io.marioslab.basis.template;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,20 +31,20 @@ public abstract class Reflection {
 	public abstract Object getField (Object obj, String name);
 
 	/** Returns an opaque handle to the method with the given name best matching the signature implied by the given arguments, or
-	 * null if the method could not be found. If obj is an instance of Class, the matching static method is returned. If the name
-	 * is null and the object is a {@link FunctionalInterface}, the first declared method on the object is called. **/
-	public abstract Object getMethod (Object obj, String name, Object... arguments);
+	 * null if the method could not be found. The first argument in arguments  must be the receiver (and object or Class instance).
+	 * If the receiver is an instance of Class, the matching static method is returned. If the name
+	 * is null and the receiver is a {@link FunctionalInterface}, the first declared method on the object is called. **/
+	public abstract Object getMethod (String name, List<Object> arguments);
 
 	/** Returns the value of the field **/
 	public abstract Object getFieldValue (Object obj, Object field);
 
-	/** Calls the method on the object with the given arguments **/
-	public abstract Object callMethod (Object obj, Object method, Object... arguments);
+	/** Calls the method on the object with the given arguments. The object is the first argument in arguments. **/
+	public abstract Object callMethod (Object method, List<Object> arguments);
 
 	public static class JavaReflection extends Reflection {
 		private final Map<Class, Map<String, Field>> fieldCache = new ConcurrentHashMap<Class, Map<String, Field>>();
-		private final Map<Class, Map<MethodSignature, Method>> methodCache = new ConcurrentHashMap<Class, Map<MethodSignature, Method>>();
-		private final Map<Class, Map<MethodSignature, Method>> functionCache = new ConcurrentHashMap<Class, Map<MethodSignature, Method>>();
+		private final Map<Class, Map<MethodSignature, MethodHandle>> methodCache = new ConcurrentHashMap<Class, Map<MethodSignature, MethodHandle>>();
 
 		@Override
 		public Object getField (Object obj, String name) {
@@ -90,20 +95,21 @@ public abstract class Reflection {
 		}
 
 		@Override
-		public Object getMethod (Object obj, String name, Object... arguments) {
+		public Object getMethod (String name, List<Object> arguments) {
+			Object obj = arguments.get(0);
 			Class cls = obj instanceof Class ? (Class)obj : obj.getClass();
-			Map<MethodSignature, Method> methods = methodCache.get(cls);
+			Map<MethodSignature, MethodHandle> methods = methodCache.get(cls);
 			if (methods == null) {
-				methods = new ConcurrentHashMap<MethodSignature, Method>();
+				methods = new ConcurrentHashMap<MethodSignature, MethodHandle>();
 				methodCache.put(cls, methods);
 			}
 
-			Class[][] parameterTypes = new Class[2][arguments.length];
-			for (int i = 0; i < arguments.length; i++) {
-				parameterTypes[0][i] = arguments[i] == null ? Object.class : arguments[i].getClass();
+			Class[][] parameterTypes = new Class[2][arguments.size() - 1];
+			for (int i = 1, n = arguments.size(); i < n; i++) {
+				parameterTypes[0][i - 1] = arguments.get(i) == null ? Object.class : arguments.get(i).getClass();
 			}
-			for (int i = 0; i < arguments.length; i++) {
-				Class argType = arguments[i] == null ? Object.class : arguments[i].getClass();
+			for (int i = 1, n = arguments.size(); i < n; i++) {
+				Class argType = arguments.get(i) == null ? Object.class : arguments.get(i).getClass();
 				if (argType == Boolean.class)
 					argType = boolean.class;
 				else if (argType == Byte.class)
@@ -119,61 +125,84 @@ public abstract class Reflection {
 				else if (argType == Float.class)
 					argType = float.class;
 				else if (argType == Double.class) argType = double.class;
-				parameterTypes[1][i] = argType;
+				parameterTypes[1][i - 1] = argType;
 			}
 
 			MethodSignature[] signatures = new MethodSignature[] {new MethodSignature(name, parameterTypes[0]), new MethodSignature(name, parameterTypes[1])};
 
-			Method method = methods.get(signatures[0]);
-			if (method == null) method = methods.get(signatures[1]);
+			// Check if we have the method cached based on signatures
+			MethodHandle methodHandle = methods.get(signatures[0]);
+			if (methodHandle != null) {
+				return methodHandle;
+			} else {
+				methodHandle = methods.get(signatures[1]);
+				if (methodHandle != null) return methodHandle;
+			}
 
-			if (method == null) {
-				for (int i = 0; i < 2; i++) {
-					try {
-						if (name == null)
-							method = cls.getDeclaredMethods()[0];
-						else
-							method = cls.getDeclaredMethod(name, parameterTypes[i]);
-						method.setAccessible(true);
-						methods.put(signatures[i], method);
-						break;
-					} catch (Throwable e) {
-						// fall through
-					}
-				}
-
-				if (method == null) {
-					Class parentClass = cls.getSuperclass();
-					while (parentClass != Object.class && parentClass != null) {
-						for (int i = 0; i < 2; i++) {
-							try {
-								if (name == null)
-									method = parentClass.getDeclaredMethods()[0];
-								else
-									method = parentClass.getDeclaredMethod(name, parameterTypes[i]);
-								method.setAccessible(true);
-								methods.put(signatures[i], method);
-								break;
-							} catch (Throwable e) {
-								// fall through
-							}
-						}
-						parentClass = parentClass.getSuperclass();
-					}
+			// Check if we can find the method on the concrete
+			// class as a declared method.
+			Method method = null;
+			MethodSignature signature = null;
+			for (int i = 0; i < 2; i++) {
+				try {
+					if (name == null)
+						method = cls.getDeclaredMethods()[0];
+					else
+						method = cls.getDeclaredMethod(name, parameterTypes[i]);
+					signature = signatures[i];
+					break;
+				} catch (Throwable e) {
+					// fall through
 				}
 			}
 
-			return method;
+			// Check the base classes
+			if (method == null) {
+				Class parentClass = cls.getSuperclass();
+				while (parentClass != Object.class && parentClass != null) {
+					for (int i = 0; i < 2; i++) {
+						try {
+							if (name == null)
+								method = parentClass.getDeclaredMethods()[0];
+							else
+								method = parentClass.getDeclaredMethod(name, parameterTypes[i]);
+							signature = signatures[i];
+							break;
+						} catch (Throwable e) {
+							// fall through
+						}
+					}
+					parentClass = parentClass.getSuperclass();
+				}
+			}
+
+			// Convert the found method via LambdaMetaFactory and cache it
+			if (method != null) {
+				method.setAccessible(true);
+				Lookup lookup = MethodHandles.lookup();
+				try {
+					methodHandle = lookup.unreflect(method);
+				} catch (IllegalAccessException e) {
+					throw new RuntimeException("Couldn't lookup method " + method.getName());
+				}
+				methods.put(signature, methodHandle);
+				return methodHandle;
+			} else {
+				return null;
+			}
 		}
 
 		@Override
-		public Object callMethod (Object obj, Object method, Object... arguments) {
-			Method javaMethod = (Method)method;
+		public Object callMethod (Object method, List<Object> arguments) {
+			MethodHandle javaMethod = (MethodHandle)method;
 			try {
-				return javaMethod.invoke(obj, arguments);
+				if(javaMethod.type().parameterCount() > 0 && !javaMethod.type().parameterType(0).isAssignableFrom(arguments.get(0).getClass())) {
+					arguments.remove(0);
+				}
+				return javaMethod.invokeWithArguments(arguments);
 			} catch (Throwable t) {
-				throw new RuntimeException("Couldn't call method '" + javaMethod.getName() + "' with arguments '" + Arrays.toString(arguments)
-					+ "' on object of type '" + obj.getClass().getSimpleName() + "'.", t);
+				throw new RuntimeException("Couldn't call method '" + method.toString() + "' with arguments '" + arguments.toString()
+					+ "' on object of type '" + arguments.get(0).getClass().getSimpleName() + "'.", t);
 			}
 		}
 

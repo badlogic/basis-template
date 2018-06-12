@@ -2,6 +2,7 @@
 package io.marioslab.basis.template.parsing;
 
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -359,6 +360,7 @@ public abstract class Ast {
 		private final Expression function;
 		private final List<Expression> arguments;
 		private Object cachedFunction;
+		private List<Object> cachedArgumentList = new ArrayList<Object>();
 
 		public FunctionCall (Span span, Expression function, List<Expression> arguments) {
 			super(span);
@@ -381,12 +383,17 @@ public abstract class Ast {
 		public void setCachedFunction (Object cachedFunction) {
 			this.cachedFunction = cachedFunction;
 		}
+
+		public List<Object> getCachedArgumentList () {
+			return cachedArgumentList;
+		}
 	}
 
 	public static class MethodCall extends Expression {
 		private final MemberAccess method;
 		private final List<Expression> arguments;
 		private Object cachedMethod;
+		private final List<Object> cachedArgumentList = new ArrayList<Object>();
 
 		public MethodCall (Span span, MemberAccess method, List<Expression> arguments) {
 			super(span);
@@ -412,6 +419,10 @@ public abstract class Ast {
 
 		public void setCachedMethod (Object cachedMethod) {
 			this.cachedMethod = cachedMethod;
+		}
+
+		public List<Object> getCachedArgumentList () {
+			return cachedArgumentList;
 		}
 	}
 

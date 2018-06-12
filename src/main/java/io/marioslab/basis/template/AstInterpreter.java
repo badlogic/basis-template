@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -128,11 +129,14 @@ public class AstInterpreter {
 		Object object = interpretNode(methodCall.getObject(), template, context, out);
 		if (object == null) Error.error("Couldn't find object in context.", methodCall.getSpan());
 
-		Object[] argumentValues = new Object[methodCall.getArguments().size()];
+		List<Object> argumentValues = methodCall.getCachedArgumentList();
+		argumentValues.clear();
+		argumentValues.add(object);
+
 		List<Expression> arguments = methodCall.getArguments();
-		for (int i = 0, n = argumentValues.length; i < n; i++) {
+		for (int i = 0, n = arguments.size(); i < n; i++) {
 			Expression expr = arguments.get(i);
-			argumentValues[i] = interpretNode(expr, template, context, out);
+			argumentValues.add(interpretNode(expr, template, context, out));
 		}
 
 		// if the object we call the method on is a Macros instance, lookup the macro by name
@@ -145,7 +149,7 @@ public class AstInterpreter {
 					Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), methodCall.getSpan());
 				TemplateContext macroContext = macro.getMacroContext();
 				for (int i = 0; i < arguments.size(); i++) {
-					Object arg = argumentValues[i];
+					Object arg = argumentValues.get(i + 1);
 					String name = macro.getArgumentNames().get(i).getText();
 					macroContext.set(name, arg);
 				}
@@ -158,17 +162,17 @@ public class AstInterpreter {
 		Object method = methodCall.getCachedMethod();
 		if (method != null) {
 			try {
-				return Reflection.getInstance().callMethod(object, method, argumentValues);
+				return Reflection.getInstance().callMethod(method, argumentValues);
 			} catch (Throwable t) {
 				// fall through
 			}
 		}
 
-		method = Reflection.getInstance().getMethod(object, methodCall.getMethod().getName().getText(), argumentValues);
+		method = Reflection.getInstance().getMethod(methodCall.getMethod().getName().getText(), argumentValues);
 		if (method != null) {
 			// found the method on the object, call it
 			methodCall.setCachedMethod(method);
-			return Reflection.getInstance().callMethod(object, method, argumentValues);
+			return Reflection.getInstance().callMethod(method, argumentValues);
 		} else {
 			// didn't find the method on the object, try to find a field pointing to a lambda
 			Object field = Reflection.getInstance().getField(object, methodCall.getMethod().getName().getText());
@@ -176,21 +180,15 @@ public class AstInterpreter {
 				"Couldn't find method '" + methodCall.getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
 				methodCall.getSpan());
 			Object function = Reflection.getInstance().getFieldValue(object, field);
-			method = Reflection.getInstance().getMethod(function, null, argumentValues);
+			argumentValues.set(0, function);
+			method = Reflection.getInstance().getMethod(null, argumentValues);
 			if (method == null) Error.error("Couldn't find function in field '" + methodCall.getMethod().getName().getText() + "' for object of type '"
 				+ object.getClass().getSimpleName() + "'.", methodCall.getSpan());
-			return Reflection.getInstance().callMethod(function, method, argumentValues);
+			return Reflection.getInstance().callMethod(method, argumentValues);
 		}
 	}
 
 	private static Object interpretFunctionCall(FunctionCall call, Template template, TemplateContext context, OutputStream out) throws IOException {
-		Object[] argumentValues = new Object[call.getArguments().size()];
-		List<Expression> arguments = call.getArguments();
-		for (int i = 0, n = argumentValues.length; i < n; i++) {
-			Expression expr = arguments.get(i);
-			argumentValues[i] = interpretNode(expr, template, context, out);
-		}
-
 		// This is a special case to handle template level macros. If a call to a macro is
 		// made, evaluating the function expression will result in an exception, as the
 		// function name can't be found in the context. Instead we need to manually check
@@ -205,18 +203,28 @@ public class AstInterpreter {
 		}
 
 		if (function != null) {
+			List<Object> argumentValues = call.getCachedArgumentList();
+			argumentValues.clear();
+			argumentValues.add(function);
+
+			List<Expression> arguments = call.getArguments();
+			for (int i = 0, n = argumentValues.size(); i < n; i++) {
+				Expression expr = arguments.get(i);
+				argumentValues.add(interpretNode(expr, template, context, out));
+			}
+
 			Object method = call.getCachedFunction();
 			if (method != null) {
 				try {
-					return Reflection.getInstance().callMethod(function, method, argumentValues);
+					return Reflection.getInstance().callMethod(method, argumentValues);
 				} catch (Throwable t) {
 					// fall through
 				}
 			}
-			method = Reflection.getInstance().getMethod(function, null, argumentValues);
+			method = Reflection.getInstance().getMethod(null, argumentValues);
 			if (method == null) Error.error("Couldn't find function.", call.getSpan());
 			call.setCachedFunction(method);
-			return Reflection.getInstance().callMethod(function, method, argumentValues);
+			return Reflection.getInstance().callMethod(method, argumentValues);
 		} else {
 			// Check if this is a call to a macro defined in this template
 			if (call.getFunction() instanceof VariableAccess) {
@@ -224,11 +232,19 @@ public class AstInterpreter {
 				Macros macros = template.getMacros();
 				Macro macro = macros.get(functionName);
 				if (macro != null) {
+					List<Object> argumentValues = call.getCachedArgumentList();
+					argumentValues.clear();
+					List<Expression> arguments = call.getArguments();
+					for (int i = 0, n = arguments.size(); i < n; i++) {
+						Expression expr = arguments.get(i);
+						argumentValues.add(interpretNode(expr, template, context, out));
+					}
+
 					if (macro.getArgumentNames().size() != arguments.size())
 						Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), call.getSpan());
 					TemplateContext macroContext = macro.getMacroContext();
 					for (int i = 0; i < arguments.size(); i++) {
-						Object arg = argumentValues[i];
+						Object arg = argumentValues.get(i);
 						String name = macro.getArgumentNames().get(i).getText();
 						macroContext.set(name, arg);
 					}
