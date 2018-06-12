@@ -287,14 +287,17 @@ public abstract class Ast {
 	}
 
 	public static class StringLiteral extends Expression {
+		private final String cachedValue;
+
 		public StringLiteral (Span literal) {
 			super(literal);
+			String text = getSpan().getText();
+			cachedValue = text.substring(1, text.length() - 1);
 		}
 
 		/** Returns the literal without quotes **/
 		public String getValue () {
-			String text = getSpan().getText();
-			return text.substring(1, text.length() - 1);
+			return cachedValue;
 		}
 	}
 
@@ -359,11 +362,13 @@ public abstract class Ast {
 		private final Expression function;
 		private final List<Expression> arguments;
 		private Object cachedFunction;
+		private final Object[] cachedArguments;
 
 		public FunctionCall (Span span, Expression function, List<Expression> arguments) {
 			super(span);
 			this.function = function;
 			this.arguments = arguments;
+			this.cachedArguments = new Object[arguments.size()];
 		}
 
 		public Expression getFunction () {
@@ -381,17 +386,23 @@ public abstract class Ast {
 		public void setCachedFunction (Object cachedFunction) {
 			this.cachedFunction = cachedFunction;
 		}
+
+		public Object[] getCachedArguments () {
+			return cachedArguments;
+		}
 	}
 
 	public static class MethodCall extends Expression {
 		private final MemberAccess method;
 		private final List<Expression> arguments;
 		private Object cachedMethod;
+		private final Object[] cachedArguments;
 
 		public MethodCall (Span span, MemberAccess method, List<Expression> arguments) {
 			super(span);
 			this.method = method;
 			this.arguments = arguments;
+			this.cachedArguments = new Object[arguments.size()];
 		}
 
 		public Expression getObject () {
@@ -412,6 +423,10 @@ public abstract class Ast {
 
 		public void setCachedMethod (Object cachedMethod) {
 			this.cachedMethod = cachedMethod;
+		}
+
+		public Object[] getCachedArguments () {
+			return cachedArguments;
 		}
 	}
 

@@ -12,6 +12,8 @@ public class Span {
 	/** end index in source string, exclusive, starting at 0 **/
 	private int end;
 
+	private final String cachedText;
+
 	public Span (String source) {
 		this(source, 0, source.length());
 	}
@@ -25,6 +27,7 @@ public class Span {
 		this.source = source;
 		this.start = start;
 		this.end = end;
+		this.cachedText = source.substring(start, end);
 	}
 
 	public Span (Span start, Span end) {
@@ -37,11 +40,12 @@ public class Span {
 		this.source = start.source;
 		this.start = start.start;
 		this.end = end.end;
+		this.cachedText = source.substring(this.start, this.end);
 	}
 
 	/** @return the text referenced by this span **/
 	public String getText () {
-		return source.substring(start, end);
+		return cachedText;
 	}
 
 	/** @return the index of the first character of this span. **/

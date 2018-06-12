@@ -3,8 +3,6 @@ package io.marioslab.basis.template;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +126,7 @@ public class AstInterpreter {
 		Object object = interpretNode(methodCall.getObject(), template, context, out);
 		if (object == null) Error.error("Couldn't find object in context.", methodCall.getSpan());
 
-		Object[] argumentValues = new Object[methodCall.getArguments().size()];
+		Object[] argumentValues = methodCall.getCachedArguments();
 		List<Expression> arguments = methodCall.getArguments();
 		for (int i = 0, n = argumentValues.length; i < n; i++) {
 			Expression expr = arguments.get(i);
@@ -184,7 +182,7 @@ public class AstInterpreter {
 	}
 
 	private static Object interpretFunctionCall(FunctionCall call, Template template, TemplateContext context, OutputStream out) throws IOException {
-		Object[] argumentValues = new Object[call.getArguments().size()];
+		Object[] argumentValues = call.getCachedArguments();
 		List<Expression> arguments = call.getArguments();
 		for (int i = 0, n = argumentValues.length; i < n; i++) {
 			Expression expr = arguments.get(i);
