@@ -76,9 +76,9 @@ That's it! Let's explore the templating language, which is much more expressive 
 A template consists of text and code spans. Text spans are any old character sequence. Code spans are character sequences inside `{{` and `}}` which must conform to the templating language syntax. Text and code spans can be freely intermixed, e.g.:
 
 ```
-Dear {{customer.getName()}},
+Dear {{customer}},
 
-Thank you for purchasing {{license.getProductName()}}. Find below your activation codes:
+Thank you for purchasing {{license.productName}}. Find below your activation codes:
 
 {{for index, activationCode in license.activationCodes}}
    {{(index + 1)}}. {{activationCode}}
