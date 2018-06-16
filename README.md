@@ -16,7 +16,7 @@ As a dependency of your Maven project:
 ```
 <dependency>
    <groupId>io.marioslab.basis</groupId>
-   <artifactId>tempalte</artifactId>
+   <artifactId>template</artifactId>
    <version>1.0</version>
 </dependency>
 ```
