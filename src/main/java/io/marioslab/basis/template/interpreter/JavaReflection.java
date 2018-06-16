@@ -14,7 +14,7 @@ public class JavaReflection extends Reflection {
 	@SuppressWarnings("rawtypes")
 	@Override
 	public Object getField (Object obj, String name) {
-		Class cls = obj.getClass();
+		Class cls = obj instanceof Class ? (Class)obj : obj.getClass();
 		Map<String, Field> fields = fieldCache.get(cls);
 		if (fields == null) {
 			fields = new ConcurrentHashMap<String, Field>();

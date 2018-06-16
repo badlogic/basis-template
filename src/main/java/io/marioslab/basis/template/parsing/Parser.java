@@ -53,6 +53,8 @@ public class Parser {
 		return new ParserResult(nodes, macros, includes);
 	}
 
+	/** Parse a statement, which may either be a text block, if statement, for statement, while statement, macro definition,
+	 * include statement or an expression. **/
 	private Node parseStatement (TokenStream tokens, boolean allowMacros, Macros macros, List<Include> includes) {
 		Node result = null;
 

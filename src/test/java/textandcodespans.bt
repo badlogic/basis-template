@@ -1,0 +1,12 @@
+Dear {{customer}},
+
+Thank you for purchasing {{license.productName}}. Find below your activation codes:
+
+{{for index, activationCode in license.activationCodes}}
+	{{(index + 1)}}. {{activationCode}}
+{{end}}
+
+Please let me know if I can help you with anything else!
+
+Kind regards
+Your friendly neighbourhood customer service employee

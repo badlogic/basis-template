@@ -3,13 +3,42 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
+	<parent>
+		<groupId>org.sonatype.oss</groupId>
+		<artifactId>oss-parent</artifactId>
+		<version>5</version>
+	</parent>
+
 	<groupId>io.marioslab.basis</groupId>
 	<artifactId>template</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>Basis Template</name>
+	<description>An expressive templating engine for Java and the JVM</description>
 	<url>https://github.com/badlogic/basis-template</url>
+
+	<licenses>
+		<license>
+			<name>Simplified BSD License</name>
+			<url>https://opensource.org/licenses/BSD-2-Clause</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Mario Zechner</name>
+			<email>contact@badlogicgames.com</email>
+			<organization>Mario's Lab</organization>
+			<organizationUrl>https://marioslab.io</organizationUrl>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:https://github.com/badlogic/basis-template.git</connection>
+		<developerConnection>scm:git:https://github.com/badlogic/basis-template.git</developerConnection>
+		<url>http://github.com/badlogic/basis-template</url>
+	</scm>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,7 +70,21 @@
 				</configuration>
 			</plugin>
 
-		</plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.0.1</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 
+		</plugins>
 	</build>
 </project>
