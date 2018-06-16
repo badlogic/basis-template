@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
@@ -35,8 +36,11 @@ import io.marioslab.basis.template.parsing.Ast.UnaryOperation;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
 import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 
+/** Parses a {@link Source} into a {@link Template}. The implementation is a simple recursive descent parser with a lookahead of
+ * 1. **/
 public class Parser {
 
+	/** Parses a {@link Source} into a {@link Template}. **/
 	public ParserResult parse (Source source) {
 		List<Node> nodes = new ArrayList<Node>();
 		Macros macros = new Macros();
