@@ -34,14 +34,13 @@ mvn clean install
 The resulting `.jar` file will be located in the `target/` folder.
 
 ## Basic Usage
-Create a new file called `helloworld.bt`with the following content:
+Create a new file called `helloworld.bt` with the following content:
 
 ```html
 Hello {{name}}.
 ```
 
 We can then load the template from the file on the classpath, set the value of the template variable `name`, and render the template to a string, which we output to the console.
-
 
 ```java
 import io.marioslab.basis.template.Template;
@@ -67,7 +66,7 @@ Hello Hotzenplotz.
 
 This illustrates all the API surface you'll generally encounter. A quick run-down of the code:
 1. To load a template, we need a `TemplateLoader`. Basis-template provides loaders for classpath resources, files, and in-memory templates.
-2. To pass variable values to the template, we need a `TemplateContext`. A context can be thought of as a map from variable names (like `name`), and their values (like the String `"Hotzenplotz"`).
+2. To pass variable values to the template, we need a `TemplateContext`. A context can be thought of as a map from variable names (like `name`), and their values (like the string "Hotzenplotz").
 3. To render the template, we pass it the context. The template then evaluates all expressions contained in it, looks up variable values in the context, and finally returns a rendered string.
 
 That's it! Let's explore the templating language, which is much more expressive than the above example lets on.
@@ -78,19 +77,19 @@ A template consists of text and code spans. Text spans are any old character seq
 ```
 Dear {{customer.getName()}},
 
-Thank you for purchasing {{license.getProductName()}}. Find below your activation codes:
+Thank you for purchasing {{license.getProductName()}}. You can find your activation codes below:
 
 {{for index, activationCode in license.activationCodes}}
    {{(index + 1)}}. {{activationCode}}
 {{end}}
 
-Please let me know if I can help you with anything else!
+Please let me know if there is anything else I can help you with!
 
-Kind regards
+Kind regards,
 Your friendly neighbourhood customer service employee
 ```
 
-We can stuff this template into the following code:
+We can populate this template with the following code:
 
 ```java
 public static class License {
@@ -118,17 +117,16 @@ Which will yield the output:
 ```
 Dear Mr. Hotzenplotz,
 
-Thank you for purchasing Hotzenplotz. Find below your activation codes:
+Thank you for purchasing Hotzenplotz. You can find your activation codes below:
 
    1. 3ba34234bcffe
    2. 5bbe77f879000
    3. dd3ee54324bf3
 
-Please let me know if I can help you with anything else!
+Please let me know if there is anything else I can help you with!
 
-Kind regards
+Kind regards,
 Your friendly neighbourhood customer service employee
-
 ```
 
 When you render a template, all text and code spans are evaluated by the templating engine and written out ("emitted") to a `String` or `OutputStream` in sequence. Text spans, like "Dear " or "Thank you for purchasing ", are emitted verbatim as UTF-8 strings.
@@ -177,9 +175,9 @@ The templating language also supports character and string literals:
 The character {{'a'}} is included in the string {{"a-team"}}.
 ```
 
-Character and string literals may contain the common escape sequences `\n`, `\r`, `\t`. The characters `\`, `'` and `"` must also be escaped in character and string literals, e.g. `{{'\\'}} {{'\''}} {{"\""}}`.
+Character and string literals may contain the common escape sequences `\n`, `\r`, `\t`. The characters `\`, `'`, and `"` must also be escaped in character and string literals, e.g. `{{'\\'}} {{'\''}} {{"\""}}`.
 
-Finally, since basis-template is a JVM templating engine, we can not escape the million dollar escape of `null`, which looks like this in literal form: `{{null}}`. This may come in handy if you want to compare the return value of a method or function to `null`, or must pass a `null`.
+Finally, since basis-template is a JVM templating engine, we can not escape the million dollar mistake of `null`, which looks like this in literal form: `{{null}}`. This may come in handy if you want to compare the return value of a method or function to `null`, or must pass in a `null`.
 
 ## Operators
 The templating language supports most of the Java operators. The precedence of these operators is also the same as in Java.
@@ -192,7 +190,7 @@ Not entirely unexpectedly, the templating engine supports the common arithmetic 
 
 Arithmetic operators evaluate to the wider type of their two operands. E.g. when adding a `byte` and a `float`, the resulting value will have type `float`.
 
-As in Java, the `+` operator may also be used to concatenate a `String` with another value. The template engine will perform automatic coercion from the non-string operand to string in this case, e.g. `{{"Lucky number " + 9}}`.
+As in Java, the `+` operator may also be used to concatenate a string with another value. The template engine will perform automatic coercion from the non-string operand to string in this case, e.g. `{{"Lucky number " + 9}}`.
 
 ### Comparison Operators
 All comparison operators you know from Java are at your disposal, e.g. `{{23 < 34}}`, `{{23 <= 34}}`, `{{23 > 34}}`, `{{23 >= 34}}`, `{{ true != false }}`, `{{23 == 34}}`.
@@ -202,16 +200,16 @@ All comparison operators you know from Java are at your disposal, e.g. `{{23 < 3
 Comparison operators evaluate to a boolean.
 
 ### Logical Operators
-In addition to the unary `!` operator, you can also use `&&` and `||`. The operators are a short-curcuiting operators. If the left-hand operator of `&&` evaluates to `false`, the right-hand operand will not be evaluated. If the left-hand operand of `||` evaluates to false, the right-hand operand will not be evaluated.
+In addition to the unary `!` operator, you can also use `&&` and `||`. The operators, just like in Java, are short-circuiting operators. If the left-hand operator of `&&` evaluates to `false`, the right-hand operand will not be evaluated. If the left-hand operand of `||` evaluates to false, the right-hand operand will not be evaluated.
 
 Logical operators evaluate to a boolean.
 
 ### Ternary Operator
-The ternary operator is a short-hand for an `if` statement and works like in Java, e.g. `{{true ? "yes" : "no"}}`.
+The ternary operator is short-hand for an `if` statement and works like in Java, e.g. `{{true ? "yes" : "no"}}`.
 
-The conditional is required to evaluate to a boolean.
+The conditional is required to be evaluable to a boolean.
 
-> **Note**: `null` does not evaluate to boolean `false`. This is not JavaScript. User the `==` or `!=` operators with (potential) `null` values.
+> **Note**: `null` does not evaluate to the boolean `false`. This is not JavaScript. Use the `==` or `!=` operators with (potential) `null` values.
 
 ### Grouping expressions by parenthesis
 If you need more control, or want to make precedence explicit, you can use `(` and `)` to group expressions, e.g. `{{(1 + 3) * 4}}`.
@@ -222,28 +220,26 @@ These are currently not implemented. You can either implement them as functions,
 ## Contexts & Variables
 For a template to be useful, we need to be able to inject values into it. As shown previously, this is done by providing a `TemplateContext` when rendering a template.
 
-To set a variable value, invoke the `TemplateContext#set(String, Object)` method:
+To set a variable value, invoke the `TemplateContext.set(String, Object)` method:
 
 ```
 {{a}} {{b}} {{c}}
 ```
-
 ```Java
 context.set("a", 123).set("b", "Test").set("c", myObject);
 System.out.println(template.render(context));
 ```
-
 ```
 123 Test @MyObject
 ```
 
-You can set a variable to any Java primitive or object, and even `null`. Variable names, also known as identifiers, follow the same rules as idenifiers in Java. They may start with `_`, `$`, or `[a-zA-Z]`, and then continue on with zero or more of `_`, `$`, `[a-zA-Z]`, or `[0-9]`.
+You can set a variable to any Java primitive or object, and even `null`. Variable names, also known as identifiers, follow the same rules as identifiers in Java. They may start with `_`, `$`, or `[a-zA-Z]`, and then continue on with zero or more of `_`, `$`, `[a-zA-Z]`, or `[0-9]`.
 
 When the templating engine encounters a variable name in an expression, it looks into the context for its value. Unlike in other templating engines, if the value for that variable name is not found, a `RuntimeException` is thrown. If you really require "optional" variables, you can check for their existence by comparing the variable to `null`.
 
-When the variable value is evaluated, it takes on whatever type the corresponding Java object has. E.g. an `int` will be treated like an integer in expression, a `Map` like a map and so on. The template engine will also perform widening type coercions for arithmetic expressions and passing arguments to methods and functions in the same way Java does.
+When the variable value is evaluated, it takes on whatever type the corresponding Java object has. For example, an `int` will be treated like an integer in the expression, a `Map` like a map, and so on. The template engine will also perform widening type coercions for arithmetic expressions and pass arguments to methods and functions in the same way Java does.
 
-The evaluation of primitive types is straight forward. However, the real power of basis-template comes from being able to access fields and call methods on objects.
+The evaluation of primitive types is straightforward. However, the real power of basis-template comes from being able to access fields and call methods on objects.
 
 ## Accessing fields
 When a context variable points to an object, you can access that object's fields like in Java (with one slight twist):
@@ -251,7 +247,6 @@ When a context variable points to an object, you can access that object's fields
 ```
 Basis-template can access private {{myObject.privateField}}, package private {{myObject.packagePrivateField}}, protected {{myObject.protectedField}}, and public {{myObject.publicField}} fields. It can also access static {{myClass.STATIC_FIELD}} fields.
 ```
-
 ```java
 public static class MyObject {
    public static String STATIC_FIELD = "I'm static";
@@ -260,18 +255,18 @@ public static class MyObject {
    protected float protectedField = 123.456f;
    public String publicField = "ello";
 }
-
+// ...
 context.set("myObject", new MyObject());
 context.set("myClass", MyObject.class);
 System.out.println(template.render(context));
 ```
-```
+```
 Basis-template can access private 123, package private true, protected 123.456, and public ello fields. It can also access static I'm static fields.
 ```
 
-The twist is that basis-template will stomp over your access modifiers and allow reading private, package private and protected fields. Field access is slightly more performant in basis-template than method invocations. This little unsafe feature lets you wrangle out a tiny bit more performance of your templates.
+The twist is that basis-template will stomp over your access modifiers and allow reading private, package private, and protected fields. Field access is slightly more performant in basis-template than method invocations. This little unsafe feature lets you wrangle out a tiny bit more performance of your templates.
 
-> **Note**: Unlike other templating engines, basis-template does not resolve getter methods following the Java bean convention. Either access the field by name, or invoke the getter.
+> **Note**: Unlike other templating engines, basis-template does not resolve getter methods following the JavaBean convention. Either access the field by name, or invoke the getter.
 
 ## Calling methods
 Similar to fields, basis-template lets you call any method on any object.
@@ -279,28 +274,26 @@ Similar to fields, basis-template lets you call any method on any object.
 ```
 {{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{String.format(%010d", 93)}}
 ```
-
 ```java
 public static class MyObject {
    private int add (int a, int b) { return a + b; }
    protected float add (float a, float b) { return a + b; }
    public static String staticMethod () { return "Hello"; }
 }
-
+// ...
 context.set("myObject", new MyObject());
 context.set("String", String.class);
 System.out.println(template.render(context));
 ```
-
 ```
 3 3.0 Hello
 ```
 
 Again, basis-template allows you to ignore access modifiers entirely.
 
-One point of note is the fact, that basis-template can deal with overloaded methods. For this to work, the types of the arguments passed to an overloaded method must match the method argument types (which may require an implicit widnening type coercion). In the above example `{{myObject.add(1, 2)}}` will call the `MyObject.add(int, int)` method, because the two supplied arguments are of type `int`, where as `{{myObject.add(1f, 2f)}}` will call the `MyObject.add(float, float)` method because the supplied arguments are of type `float`. A widening type coercion will be attempted in a case like `{{myObject.add(1b, 1s)}}`. This would match the `MyObject.add(int, int)` method. through widening the `byte` and `short` arguments to `int`.
+One point to note is the fact that basis-template can deal with overloaded methods. For this to work, the types of the arguments passed to an overloaded method must match the method argument types (which may require an implicit widnening type coercion). In the above example `{{myObject.add(1, 2)}}` will call the `MyObject.add(int, int)` method, because the two supplied arguments are of type `int`, where as `{{myObject.add(1f, 2f)}}` will call the `MyObject.add(float, float)` method because the supplied arguments are of type `float`. A widening type coercion will be attempted in a case like `{{myObject.add(1b, 1s)}}`. This would match the `MyObject.add(int, int)` method through widening the `byte` and `short` arguments to `int`.
 
-> **Note**: basis-template can currently not handle varags like in `String.format()`. See [issue #5](https://github.com/badlogic/basis-template/issues/5).
+> **Note**: basis-template currently does not handle varargs like in `String.format()`. See [issue #5](https://github.com/badlogic/basis-template/issues/5).
 
 ## Arrays and maps
 The templating language also grants you access to array elements and map entries:
@@ -308,7 +301,6 @@ The templating language also grants you access to array elements and map entries
 ```
 {{myArray[2]}} {{myMap.get("key")}} {{myMap["key"]}}
 ```
-
 ```java
 context.set("myArray", new int[] { 1, 2, 3 });
 Map<String, String> myMap = new HashMap<String, String>();
@@ -326,14 +318,14 @@ Array elements are accessed via `[index]` like in Java. To access map entries, y
 Both array indices and map keys can be arbitrary expressions. Array indices must evaluate to an `ìnt`. Map keys must evalute to the key type of the map.
 
 ## Access chaining
-Like in Java, you can infinitely nest member, array element and map accesses:
+Like in Java, you can infinitely nest members, array elements, and map accesses:
 
 ```
 {{{myObject.aField[12]["key"].someMethod(1, 2).anotherMethod()}}
 ```
 
 ### Functions
-Basis-template supports functions as first class citizens. For this to work, you must use a Java 8+ JVM. But how to set a variable to a Java "function"?
+Basis-template supports functions as first-class citizens. For this to work, you must use a Java 8+ JVM. But how can you set a variable to a Java "function"?
 
 ```
 {{cos(3.14)}}
@@ -346,28 +338,28 @@ System.out.println(template.render(context));
 -0.9999987317275395
 ```
 
-The trick is to take a method reference (like `Math::cos`) and cast it to a fitting `FunctionalInterface`. The Java compiler will translate this into an anonymous class instance with one method called `apply`. When such an instance is set as the value of a variable, and the template engine encounters that variable as a name of a function to call, it is smart enough to resolve the `apply` function and reflectively call it.
+The trick is to take a method reference (like `Math::cos`) and cast it to a fitting `FunctionalInterface`. The Java compiler will translate this into an anonymous class instance with one method called `apply`. When such an instance is set as the value of a variable and the template engine encounters that variable as a name of a function to call, it is smart enough to resolve the `apply` function and reflectively call it.
 
-With this little trick, you can build up a "standard" library of sorts to be used in all our templates, with short function names like `trim`, `abs` and so on.
+With this little trick, you can build up a "standard" library of sorts to be used in all our templates, with short function names like `trim`, `abs`, and so on.
 
 > **Note**: Basis-template does not come with any built-in functions out of the box. If you happen to create a set of such functions, send a PR!
 
-This feature also allows you to store "functions" in fields, arrays, maps or variables, essentially making "functions" first class citizens.
+This feature also allows you to store "functions" in fields, arrays, maps, or variables, essentially making "functions" first-class citizens.
 
 ```
 This calls Math::abs on the argument: {{array[0](-123)}}
 This calls Math::signum on the argument: {{array[1](-7)}}
 This calls the function in the field myFunc: {{myObject.myFunc(3)}}
 ```
-
 ```java
 class MyObject {
    IntFunction<Integer> myFunc = v -> return v + 1;
 }
-
+// ...
 context.set("myObject", new MyObject());
 context.set("array", new IntFunction[] {Math::abs, Math::signum});
 result = template.render(context);
+System.out.println(result);
 ```
 ```
 This calls Math::abs on the argument: 123
@@ -375,7 +367,7 @@ This calls Math::signum on the argument: -1
 This calls the function in the field myFunc: 4
 ```
 
-Alternatively to injecting functional interface instances via the template context, you can also create functions directly in your template. These are called macros.
+As an alternative to injecting functional interface instances via the template context, you can also create functions directly in your template. These are called macros.
 
 ## Macros
 A macro consists of a name, an argument list and a macro body. They are essentially functions defined directly in your template:
@@ -403,10 +395,10 @@ When a macro is called, it gets its own context. This context only contains the 
 
 Macros need to be defined at the top-level of a template (so, not inside other macros, control statements, etc.).
 
-> **Note**: Macros can currently not return a value to be used in an expression. A macro will always return `null` semantically. This might change in the future.
+> **Note**: Macros cannot currently return a value to be used in an expression. A macro will always return `null` semantically. This might change in the future.
 
 ## Assignments
-The templating language allows a limited form of assignements. You can set the value of a context variable in your template. This can be useful when you want to store function or method return values, or some intermediate results of a calculation:
+The templating language allows a limited form of assignments. You can set the value of a context variable in your template. This can be useful when you want to store function or method return values, or some intermediate results of a calculation:
 
 ```
 {{{a = 10}}}
@@ -421,13 +413,13 @@ The templating language allows a limited form of assignements. You can set the v
 
 If the variable name already exists in the context, its value will be replaced. If the variable name did not exist already, it is created.
 
-Assigning new values to object fields, arrays or maps is not supported and will never be supported. This would allow modification of Java side objects from within the template, a big no-no.
+Assigning new values to object fields, arrays, or maps is not supported and will never be supported. This would allow modification of Java objects from within the template, which is a big no-no.
 
 ## Control flow
-The templating language comes with 3 basic control flow statements. All control flow
+The templating language comes with 3 basic control flow statements.
 
 ### If statements
-If statements expect a boolean condition based on which a block of text and code spans is evaluated.
+If statements expect a boolean condition to determine which block of text and code spans are evaluated.
 
 ```
 {{if 1 > 2}}
@@ -442,10 +434,10 @@ If statements expect a boolean condition based on which a block of text and code
    Otherwise, this will be evaluated.
 ```
 
-You can of course omit `elseif` and `else` clauses.
+You can, of course, omit the `elseif` and `else` clauses.
 
 ### For statements
-For statements are similar to Java's enhanced for loops, e.g. `for (SomeType x: someCollection)` statements. You can iterate over arrays, map values, `Iterable` instances, and `Iterator` instances:
+For statements are similar to Java's enhanced `for` loops, e.g. `for (SomeType x : someCollection)` statements. You can iterate over arrays, map values, `Iterable` instances, and `Iterator` instances:
 
 ```
 {{for value in array}}
@@ -473,6 +465,7 @@ set.add("Value #2");
 set.add("Value #3");
 context.set("set", set);
 result = template.render(context);
+System.out.println(result);
 ```
 ```
    Got 1 from the array
@@ -490,7 +483,7 @@ If you iterate over an array or map, you can assign the index/key to a local var
 
 ```
 {{for index, value in array}}
-   Is this the first element: {{index == ? "yes" : "no"}}
+   Is this the first element: {{index == 0 ? "yes" : "no"}}
    Element value: {{value}}
 {{end}}
 ```
@@ -565,7 +558,7 @@ When the template engine encounters an include statement, it uses the same templ
 
 If you use one of the basis-template `TemplateLoader` classes to load your templates, all templates will be cached in their "compiled" form. This way inclusion is quite fast.
 
-> **Note**: the include statement does currently **not** allow circular inclusion of templates. But you can include the same template multiple times.
+> **Note**: the include statement currently does **not** allow circular inclusion of templates. But you can include the same template multiple times.
 
 ## Scopes
 A template has a global scope in form of a template context. All code spans inside the template have access to the variables in this scope.
@@ -579,7 +572,7 @@ An include without a context inherits the scope of the including template. An in
 ## Performance
 Basis-template compiles templates to an abstract syntax tree, which is then interpreted. While this sounds terribly slow, a lot of care was taken to ensure that basis-template is among the fastest JVM templating engines.
 
-You can test performance with this fork of [template-benchmark](https://github.com/badlogic/template-benchmark). While this is a [JMH](http://openjdk.java.net/projects/code-tools/jmh/) based microbenchmark, it tries to simulate a real-world scenario. YMMV.
+You can test performance with this fork of [template-benchmark](https://github.com/badlogic/template-benchmark). While this is a [JMH](http://openjdk.java.net/projects/code-tools/jmh/)-based microbenchmark, it tries to simulate a real-world scenario. YMMV.
 
 The benchmark contains many commonly used JVM templating engines. If you don't see your templating engine of choice, send a PR.
 
@@ -587,24 +580,24 @@ Here are the results:
 
 ![benchmark.jpg](./benchmark.jpg)
 
-Basis-template comes in third behind Pebble and Rocker. Both of these compile templates to Java source code. That's somewhat remarkable, as basis-template offers a similar kind of expressivity, while being interpreted and not requiring a separate compiliation step (or external dependencies).
+Basis-template comes in third behind [Pebble](https://github.com/PebbleTemplates/pebble) and [Rocker](https://github.com/fizzed/rocker). Both of them compile templates to Java source code. That's somewhat remarkable, as basis-template offers a similar kind of expressivity, while being interpreted and not requiring a separate compilation step (or external dependencies).
 
 The bigger standard deviation of basis-template in ops/s can be attributed to GC pressure due to the template engine heavily relying on boxing to perform its task. While some work has already been done to eliminate the GC pressure, there's still some room for improvement.
 
-Other templating engines do not fare as well as basis-template, with many of them also not supporting as many features. However, most of them have been in the wild for much longer, are battle tested and have more than one maintainer. Performance alone is not a reason to use a templating engine.
+Other templating engines do not fare as well as basis-template, with many of them also not supporting as many features. However, most of them have been in the wild for much longer, are battle tested, and have more than one maintainer. Performance alone is not a reason to use a templating engine.
 
-So, should use basis-template? If it fits your requirements, sure. But be warned that basis-template is a very young project, and there'll likely be dragons.
+So, should you use basis-template? If it fits your requirements, sure. But be warned that basis-template is a very young project, and there might be some unforeseen issues that you may come across.
 
 To round out this section, here are some free performance tips:
 
-* Function and method invocation are the most expensive operation, followed by field, array and map access and expressions. If you can, acceess fields instead of calling getters.
-* The compiler does not perform any kind of common subexpression elimination. If readability doesn't suffer to much, assign intermediate results to variables.
+* Function and method invocations are the most expensive operation, followed by field, array, and map access and expressions. If you can, access fields instead of calling getters.
+* The compiler does not perform any kind of common subexpression elimination. If readability doesn't suffer too much, assign intermediate results to variables.
 * The less code spans you have, the faster the template evluation will be.
 
 Other than this, I recommend profiling your use of basis-template.
 
 ## License
-See [LICENSE](./LICENSE)
+See [LICENSE](./LICENSE).
 
 ## Contributing
-Simply send a PR and grant written, irrevocable permission in your PR description to publish your code under this repositories [LICENSE](./LICENSE).
+Simply send a PR and grant written, irrevocable permission in your PR description to publish your code under this repository's [LICENSE](./LICENSE).
