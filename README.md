@@ -107,7 +107,7 @@ public static void main (String[] args) {
    TemplateLoader loader = new ClasspathTemplateLoader();
    Template template = loader.load("/textandcodespans.bt");
    TemplateContext context = new TemplateContext();
-   context.set("customer", "Mr. Hotzenplotz");
+   context.set("customer", new Customer("Mr. Hotzenplotz"));
    context.set("license", new License("Hotzenplotz", new String[] {"3ba34234bcffe", "5bbe77f879000", "dd3ee54324bf3"}));
    System.out.println(template.render(context));
 }
