@@ -9,15 +9,16 @@ import io.marioslab.basis.template.TemplateLoader.Source;
 
 public class Tokenizer {
 
-	/** Tokenizes the source into tokens. Text blocks not enclosed in {{ }} are returned as a single token of type
-	 * {@link TokenType.TextBlock}. {{ and }} are not returned as individual tokens. See {@link TokenType} for the list of tokens
-	 * this tokenizer understands. */
+	/** Tokenizes the source into tokens with a {@link TokenType}. Text blocks not enclosed in {{ }} are returned as a single token
+	 * of type {@link TokenType.TextBlock}. {{ and }} are not returned as individual tokens. See {@link TokenType} for the list of
+	 * tokens this tokenizer understands. */
 	public List<Token> tokenize (Source source) {
 		List<Token> tokens = new ArrayList<Token>();
 		if (source.getContent().length() == 0) return tokens;
 		CharacterStream stream = new CharacterStream(source);
 		stream.startSpan();
 
+		// TODO: this will fall on its face if we have something like {{ "}}" }}.
 		while (stream.hasMore()) {
 			if (stream.match("{{", false)) {
 				if (!stream.isSpanEmpty()) tokens.add(new Token(TokenType.TextBlock, stream.endSpan()));
@@ -42,14 +43,14 @@ public class Tokenizer {
 		List<Token> tokens = new ArrayList<Token>();
 
 		// match opening tag and throw it away
-		if (!stream.match("{{", true)) Error.error("Expected {{", new Span(source, stream.getIndex(), stream.getIndex() + 1));
+		if (!stream.match("{{", true)) Error.error("Expected {{", new Span(source, stream.getPosition(), stream.getPosition() + 1));
 
 		outer:
 		while (stream.hasMore()) {
 			// skip whitespace
 			stream.skipWhiteSpace();
 
-			// Number literal
+			// Number literal, both integers and floats. Number literals may be suffixed by a type identifier.
 			if (stream.matchDigit(false)) {
 				TokenType type = TokenType.IntegerLiteral;
 				stream.startSpan();
@@ -83,6 +84,7 @@ public class Tokenizer {
 			if (stream.match("'", false)) {
 				stream.startSpan();
 				stream.consume();
+				// Note: escape sequences are parsed in CharacterLiteral
 				stream.match("\\", true);
 				stream.consume();
 				if (!stream.match("'", true)) Error.error("Expected closing ' for character literal.", stream.endSpan());
@@ -92,13 +94,13 @@ public class Tokenizer {
 			}
 
 			// String literal
-			if (stream.match(TokenType.DoubleQuote.literal, true)) {
+			if (stream.match(TokenType.DoubleQuote.getLiteral(), true)) {
 				stream.startSpan();
 				boolean matchedEndQuote = false;
 				while (stream.hasMore()) {
-					// TODO add more escape sequences
+					// Note: escape sequences like \n are parsed in StringLiteral
 					if (stream.match("\\\"", true)) continue;
-					if (stream.match(TokenType.DoubleQuote.literal, true)) {
+					if (stream.match(TokenType.DoubleQuote.getLiteral(), true)) {
 						matchedEndQuote = true;
 						break;
 					}
@@ -131,9 +133,9 @@ public class Tokenizer {
 
 			// Simple tokens
 			for (TokenType t : TokenType.getSortedValues()) {
-				if (t.literal != null) {
-					if (stream.match(t.literal, true)) {
-						tokens.add(new Token(t, new Span(source, stream.getIndex() - t.literal.length(), stream.getIndex())));
+				if (t.getLiteral() != null) {
+					if (stream.match(t.getLiteral(), true)) {
+						tokens.add(new Token(t, new Span(source, stream.getPosition() - t.getLiteral().length(), stream.getPosition())));
 						continue outer;
 					}
 				}
@@ -142,11 +144,11 @@ public class Tokenizer {
 			// match closing tag
 			if (stream.match("}}", false)) break;
 
-			Error.error("Unknown token", new Span(source, stream.getIndex(), stream.getIndex() + 1));
+			Error.error("Unknown token", new Span(source, stream.getPosition(), stream.getPosition() + 1));
 		}
 
-		// just another sanity check
-		if (!stream.match("}}", true)) Error.error("Expected }}", new Span(source, stream.getIndex(), stream.getIndex() + 1));
+		// code spans must end with }}
+		if (!stream.match("}}", true)) Error.error("Expected }}", new Span(source, stream.getPosition(), stream.getPosition() + 1));
 		return tokens;
 	}
 }

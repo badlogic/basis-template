@@ -4,6 +4,9 @@ package io.marioslab.basis.template.parsing;
 import java.util.Arrays;
 import java.util.Comparator;
 
+/** Enumeration of token types. A token type consists of a representation for error messages, and may optionally specify a literal
+ * to be used by the {@link CharacterStream} to recognize the token. Token types are sorted by their literal length to easy
+ * matching of token types with common prefixes, e.g. "<" and "<=". Token types with longer literals are matched first. */
 public enum TokenType {
 	// @off
 	TextBlock("a text block"),
@@ -51,6 +54,8 @@ public enum TokenType {
 	private static TokenType[] values;
 
 	static {
+		// Sort the token types by their literal length. The character stream uses this
+		// this order to match tokens with the longest length first.
 		values = TokenType.values();
 		Arrays.sort(values, new Comparator<TokenType>() {
 			@Override
@@ -63,8 +68,8 @@ public enum TokenType {
 		});
 	}
 
-	final String literal;
-	final String error;
+	private final String literal;
+	private final String error;
 
 	TokenType (String error) {
 		this.literal = null;
@@ -76,10 +81,18 @@ public enum TokenType {
 		this.error = error;
 	}
 
+	/** The literal to match, may be null. **/
 	public String getLiteral () {
 		return literal;
 	}
 
+	/** The error string to use when reporting this token type in an error message. **/
+	public String getError () {
+		return error;
+	}
+
+	/** Returns an array of token types, sorted in descending order based on their literal length. This is used by the
+	 * {@link CharacterStream} to match token types with the longest literal first. E.g. "<=" will be matched before "<". **/
 	public static TokenType[] getSortedValues () {
 		return values;
 	}

@@ -3,8 +3,8 @@ package io.marioslab.basis.template.parsing;
 
 import io.marioslab.basis.template.TemplateLoader.Source;
 
-/** Wraps a source string and handles traversing the contained characters. Manages a current {@link Span} via the
- * {@link #startSpan()} and {@link #endSpan()} methods. */
+/** Wraps a the content of a {@link Source} and handles traversing the contained characters. Manages a current {@link Span} via
+ * the {@link #startSpan()} and {@link #endSpan()} methods. */
 public class CharacterStream {
 	private final Source source;
 	private int index = 0;
@@ -27,18 +27,18 @@ public class CharacterStream {
 		this.end = end;
 	}
 
-	/** @return whether there are more characters in the stream **/
+	/** Returns whether there are more characters in the stream **/
 	public boolean hasMore () {
 		return index < end;
 	}
 
-	/** @return the next character without advancing the stream **/
+	/** Returns the next character without advancing the stream **/
 	public char peek () {
 		if (!hasMore()) throw new RuntimeException("No more characters in stream.");
 		return source.getContent().charAt(index++);
 	}
 
-	/** @return the next character and advance the stream **/
+	/** Returns the next character and advance the stream **/
 	public char consume () {
 		if (!hasMore()) throw new RuntimeException("No more characters in stream.");
 		return source.getContent().charAt(index++);
@@ -56,6 +56,7 @@ public class CharacterStream {
 		return true;
 	}
 
+	/** Returns whether the next character is a digit and optionally consumes it. **/
 	public boolean matchDigit (boolean consume) {
 		if (index >= end) return false;
 		char c = source.getContent().charAt(index);
@@ -66,6 +67,8 @@ public class CharacterStream {
 		return false;
 	}
 
+	/** Returns whether the next character is the start of an identifier and optionally consumes it. Adheres to
+	 * {@link Character#isJavaIdentifierStart(char)}. **/
 	public boolean matchIdentifierStart (boolean consume) {
 		if (index >= end) return false;
 		char c = source.getContent().charAt(index);
@@ -76,6 +79,8 @@ public class CharacterStream {
 		return false;
 	}
 
+	/** Returns whether the next character is the start of an identifier and optionally consumes it. Adheres to
+	 * {@link Character#isJavaIdentifierPart(char)}. **/
 	public boolean matchIdentifierPart (boolean consume) {
 		if (index >= end) return false;
 		char c = source.getContent().charAt(index);
@@ -86,6 +91,7 @@ public class CharacterStream {
 		return false;
 	}
 
+	/** Skips any number of successive whitespace characters. **/
 	public void skipWhiteSpace () {
 		while (true) {
 			if (index >= end) return;
@@ -99,10 +105,12 @@ public class CharacterStream {
 		}
 	}
 
+	/** Start a new Span at the current stream position. Call {@link #endSpan()} to complete the span. **/
 	public void startSpan () {
 		spanStart = index;
 	}
 
+	/** Completes the span started with {@link #startSpan()} at the current stream position. **/
 	public Span endSpan () {
 		return new Span(source, spanStart, index);
 	}
@@ -111,7 +119,8 @@ public class CharacterStream {
 		return spanStart == this.index;
 	}
 
-	public int getIndex () {
+	/** Returns the current character position in the stream. **/
+	public int getPosition () {
 		return index;
 	}
 }

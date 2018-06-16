@@ -23,16 +23,6 @@ public class Token {
 		return span.getText();
 	}
 
-	/** @return whether the token matches the type. */
-	public boolean match (TokenType type) {
-		return this.type == type;
-	}
-
-	/** @return whether the token matches the type and text. */
-	public boolean matches (TokenType type, String text) {
-		return this.type == type && span.getText() == text;
-	}
-
 	@Override
 	public String toString () {
 		return "Token [type=" + type + ", span=" + span + "]";

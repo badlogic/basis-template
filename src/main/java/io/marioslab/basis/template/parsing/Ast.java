@@ -8,15 +8,23 @@ import java.util.Map;
 import io.marioslab.basis.template.Error;
 import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.TemplateContext;
+import io.marioslab.basis.template.TemplateLoader.Source;
+import io.marioslab.basis.template.interpreter.AstInterpreter;
+import io.marioslab.basis.template.interpreter.Reflection;
 
+/** Templates are parsed into an abstract syntax tree (AST) nodes by a Parser. This class contains all AST node types. */
 public abstract class Ast {
-	public static class Node {
+
+	/** Base class for all AST nodes. A node minimally stores the {@link Span} that references its location in the
+	 * {@link Source}. **/
+	public abstract static class Node {
 		private final Span span;
 
 		public Node (Span span) {
 			this.span = span;
 		}
 
+		/** Returns the {@link Span} referencing this node's location in the {@link Source}. **/
 		public Span getSpan () {
 			return span;
 		}
@@ -27,6 +35,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A text node represents an "un-templated" span in the source that should be emitted verbatim. **/
 	public static class Text extends Node {
 		private final byte[] bytes;
 
@@ -39,17 +48,21 @@ public abstract class Ast {
 			}
 		}
 
+		/** Returns the UTF-8 representatino of this text node. **/
 		public byte[] getBytes () {
 			return bytes;
 		}
 	}
 
+	/** All expressions are subclasses of this node type. Expressions are separated into unary operations (!, -), binary operations
+	 * (+, -, *, /, etc.) and ternary operations (?:). */
 	public abstract static class Expression extends Node {
 		public Expression (Span span) {
 			super(span);
 		}
 	}
 
+	/** An unary operation node represents a logical or numerical negation. **/
 	public static class UnaryOperation extends Expression {
 
 		public static enum UnaryOperator {
@@ -82,6 +95,8 @@ public abstract class Ast {
 		}
 	}
 
+	/** A binary operation represents arithmetic operators, like addition or division, comparison operators, like less than or
+	 * equals, logical operators, like and, or an assignment. **/
 	public static class BinaryOperation extends Expression {
 
 		public static enum BinaryOperator {
@@ -132,6 +147,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A ternary operation is an abbreviated if/then/else operation, and equivalent to the the ternary operator in Java. **/
 	public static class TernaryOperation extends Expression {
 		private final Expression condition;
 		private final Expression trueExpression;
@@ -157,12 +173,14 @@ public abstract class Ast {
 		}
 	}
 
+	/** A null literal, with the single value <code>null</code> **/
 	public static class NullLiteral extends Expression {
 		public NullLiteral (Span span) {
 			super(span);
 		}
 	}
 
+	/** A boolean literal, with the values <code>true</code> and <code>false</code> **/
 	public static class BooleanLiteral extends Expression {
 		private final boolean value;
 
@@ -176,6 +194,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A double precision floating point literal. Must be marked with the <code>d</code> suffix, e.g. "1.0d". **/
 	public static class DoubleLiteral extends Expression {
 		private final double value;
 
@@ -189,6 +208,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A single precision floating point literla. May be optionally marked with the <code>f</code> suffix, e.g. "1.0f". **/
 	public static class FloatLiteral extends Expression {
 		private final float value;
 
@@ -204,6 +224,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A byte literal. Must be marked with the <code>b</code> suffix, e.g. "123b". **/
 	public static class ByteLiteral extends Expression {
 		private final byte value;
 
@@ -217,6 +238,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A short literal. Must be marked with the <code>s</code> suffix, e.g. "123s". **/
 	public static class ShortLiteral extends Expression {
 		private final short value;
 
@@ -230,6 +252,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** An integer literal. **/
 	public static class IntegerLiteral extends Expression {
 		private final int value;
 
@@ -243,6 +266,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A long integer literal. Must be marked with the <code>l</code> suffix, e.g. "123l". **/
 	public static class LongLiteral extends Expression {
 		private final long value;
 
@@ -256,6 +280,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A character literal, enclosed in single quotes. Supports escape sequences \n, \r,\t, \' and \\. **/
 	public static class CharacterLiteral extends Expression {
 		private final char value;
 
@@ -272,6 +297,8 @@ public abstract class Ast {
 					value = '\t';
 				else if (text.charAt(2) == '\\')
 					value = '\\';
+				else if (text.charAt(2) == '\'')
+					value = '\'';
 				else {
 					Error.error("Unknown escape sequence '" + literal.getText() + "'.", literal);
 					value = 0; // never reached
@@ -286,6 +313,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** A string literal, enclosed in double quotes. Does not support escape sequences. **/
 	public static class StringLiteral extends Expression {
 		private final String cachedValue;
 
@@ -301,6 +329,9 @@ public abstract class Ast {
 		}
 	}
 
+	/** Represents a top-level variable access by name. E.g. in the expression "a + 1", <code>a</code> would be encoded as a
+	 * VariableAccess node. Variables can be both read (in expressions) and written to (in assignments). Variable values are looked
+	 * up and written to a {@link TemplateContext}. **/
 	public static class VariableAccess extends Expression {
 		public VariableAccess (Span name) {
 			super(name);
@@ -311,6 +342,8 @@ public abstract class Ast {
 		}
 	}
 
+	/** Represents a map or array element access of the form <code>mapOrArray[keyOrIndex]</code>. Maps and arrays may only be read
+	 * from. **/
 	public static class MapOrArrayAccess extends Expression {
 		private final Expression mapOrArray;
 		private final Expression keyOrIndex;
@@ -321,15 +354,19 @@ public abstract class Ast {
 			this.keyOrIndex = keyOrIndex;
 		}
 
+		/** Returns an expression that must evaluate to a map or array. **/
 		public Expression getMapOrArray () {
 			return mapOrArray;
 		}
 
+		/** Returns an expression that is used as the key or index to fetch a map or array element. **/
 		public Expression getKeyOrIndex () {
 			return keyOrIndex;
 		}
 	}
 
+	/** Represents an access of a member (field or method) of the form <code>object.member</code>. Members may only be read
+	 * from. **/
 	public static class MemberAccess extends Expression {
 		private final Expression object;
 		private final Span name;
@@ -341,23 +378,33 @@ public abstract class Ast {
 			this.name = name;
 		}
 
+		/** Returns the object on which to access the member. **/
 		public Expression getObject () {
 			return object;
 		}
 
+		/** The name of the member. **/
 		public Span getName () {
 			return name;
 		}
 
+		/** Returns the cached member descriptor as returned by {@link Reflection#getField(Object, String)} or
+		 * {@link Reflection#getMethod(Object, String, Object...)}. See {@link #setCachedMember(Object)}. **/
 		public Object getCachedMember () {
 			return cachedMember;
 		}
 
+		/** Sets the member descriptor as returned by {@link Reflection#getField(Object, String)} or
+		 * {@link Reflection#getMethod(Object, String, Object...)} for faster member lookups. Called by {@link AstInterpreter} the
+		 * first time this node is evaluated. Subsequent evaluations can use the cached descriptor, avoiding a costly reflective
+		 * lookup. **/
 		public void setCachedMember (Object cachedMember) {
 			this.cachedMember = cachedMember;
 		}
 	}
 
+	/** Represents a call to a top-level function. A function may either be a {@link FunctionalInterface} stored in a
+	 * {@link TemplateContext}, or a {@link Macro} defined in a template. */
 	public static class FunctionCall extends Expression {
 		private final Expression function;
 		private final List<Expression> arguments;
@@ -371,27 +418,37 @@ public abstract class Ast {
 			this.cachedArguments = new Object[arguments.size()];
 		}
 
+		/** Return the expression that must evaluate to a {@link FunctionalInterface} or a {@link Macro}. **/
 		public Expression getFunction () {
 			return function;
 		}
 
+		/** Returns the list of expressions to be passed to the function as arguments. **/
 		public List<Expression> getArguments () {
 			return arguments;
 		}
 
+		/** Returns the cached "function" descriptor as returned by {@link Reflection#getMethod(Object, String, Object...)} or the
+		 * {@link Macro}. See {@link #setCachedFunction(Object)}. **/
 		public Object getCachedFunction () {
 			return cachedFunction;
 		}
 
+		/** Sets the "function" descriptor as returned by {@link Reflection#getMethod(Object, String, Object...)} for faster
+		 * lookups, or the {@link Macro} to be called. Called by {@link AstInterpreter} the first time this node is evaluated.
+		 * Subsequent evaluations can use the cached descriptor, avoiding a costly reflective lookup. **/
 		public void setCachedFunction (Object cachedFunction) {
 			this.cachedFunction = cachedFunction;
 		}
 
+		/** Returns a scratch buffer to store arguments in when calling the function in {@link AstInterpreter}. Avoids generating
+		 * garbage. **/
 		public Object[] getCachedArguments () {
 			return cachedArguments;
 		}
 	}
 
+	/** Represents a call to a method of the form <code>object.method(a, b, c)</code>. **/
 	public static class MethodCall extends Expression {
 		private final MemberAccess method;
 		private final List<Expression> arguments;
@@ -405,31 +462,43 @@ public abstract class Ast {
 			this.cachedArguments = new Object[arguments.size()];
 		}
 
+		/** Returns the object on which to call the method. **/
 		public Expression getObject () {
 			return method.getObject();
 		}
 
+		/** Returns the method to call. **/
 		public MemberAccess getMethod () {
 			return method;
 		}
 
+		/** Returns the list of expressions to be passed to the function as arguments. **/
 		public List<Expression> getArguments () {
 			return arguments;
 		}
 
+		/** Returns the cached member descriptor as returned by {@link Reflection#getMethod(Object, String, Object...)}. See
+		 * {@link #setCachedMember(Object)}. **/
 		public Object getCachedMethod () {
 			return cachedMethod;
 		}
 
+		/** Sets the method descriptor as returned by {@link Reflection#getMethod(Object, String, Object...)} for faster lookups.
+		 * Called by {@link AstInterpreter} the first time this node is evaluated. Subsequent evaluations can use the cached
+		 * descriptor, avoiding a costly reflective lookup. **/
 		public void setCachedMethod (Object cachedMethod) {
 			this.cachedMethod = cachedMethod;
 		}
 
+		/** Returns a scratch buffer to store arguments in when calling the function in {@link AstInterpreter}. Avoids generating
+		 * garbage. **/
 		public Object[] getCachedArguments () {
 			return cachedArguments;
 		}
 	}
 
+	/** Represents an if statement of the form <code>if condition trueBlock elseif condition ... else falseBlock end</code>. Elseif
+	 * and else blocks are optional. */
 	public static class IfStatement extends Node {
 		private final Expression condition;
 		private final List<Node> trueBlock;
@@ -461,6 +530,9 @@ public abstract class Ast {
 		}
 	}
 
+	/** Represents a for statement of the form <code>for value in mapOrArray ... end</code> or
+	 * <code>for keyOrIndex, value in mapOrArray ... end</code>. The later form will store the key or index of the current
+	 * iteration in the specified variable. */
 	public static class ForStatement extends Node {
 		private final Span indexOrKeyName;
 		private final Span valueName;
@@ -493,6 +565,7 @@ public abstract class Ast {
 		}
 	}
 
+	/** Represents a while statement of the form <code>while condition ... end</code>. **/
 	public static class WhileStatement extends Node {
 		private final Expression condition;
 		private final List<Node> body;
@@ -512,6 +585,8 @@ public abstract class Ast {
 		}
 	}
 
+	/** Represents a macro of the form macro(arg1, arg2, arg3) ... end. Macros allow specifying re-usable template blocks that can
+	 * be "called" from other sections in the current template, or templates including the template. */
 	public static class Macro extends Node {
 		private final Span name;
 		private final List<Span> argumentNames;
@@ -552,6 +627,10 @@ public abstract class Ast {
 		}
 	}
 
+	/** Represents an include statement of the form <code>include "path"</code>, which includes the template verbatim, or
+	 * <code>include "path" as alias</code>, which includes only the macros and makes them accessible under the alias, e.g.
+	 * <code>alias.myMacro(a, b, c)</code>, or <code>include "path" with (key: value, key2: value)</code>, which includes the
+	 * template, passing the given map as the context. **/
 	public static class Include extends Node {
 		private final Span path;
 		private final Map<Span, Expression> context;
@@ -584,6 +663,7 @@ public abstract class Ast {
 			this.template = template;
 		}
 
+		/** Returns whether to include macros only. **/
 		public boolean isMacrosOnly () {
 			return macrosOnly;
 		}

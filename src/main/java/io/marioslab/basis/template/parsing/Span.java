@@ -14,6 +14,7 @@ public class Span {
 	/** end index in source string, exclusive, starting at 0 **/
 	private int end;
 
+	/** Cached String instance to reduce pressure on GC **/
 	private final String cachedText;
 
 	public Span (Source source) {
@@ -45,22 +46,22 @@ public class Span {
 		this.cachedText = source.getContent().substring(this.start, this.end);
 	}
 
-	/** @return the text referenced by this span **/
+	/** Returns the text referenced by this span **/
 	public String getText () {
 		return cachedText;
 	}
 
-	/** @return the index of the first character of this span. **/
+	/** Returns the index of the first character of this span. **/
 	public int getStart () {
 		return start;
 	}
 
-	/** @return the index of the last character of this span plus 1. **/
+	/** Returns the index of the last character of this span plus 1. **/
 	public int getEnd () {
 		return end;
 	}
 
-	/** @return the source string this span references. **/
+	/** Returns the source string this span references. **/
 	public Source getSource () {
 		return source;
 	}
@@ -70,7 +71,7 @@ public class Span {
 		return "Span [text=" + getText() + ", start=" + start + ", end=" + end + "]";
 	}
 
-	/** @return the line this span is on. Does not return a correct result for spans across multiple lines. **/
+	/** Returns the line this span is on. Does not return a correct result for spans across multiple lines. **/
 	public Line getLine () {
 		int lineStart = start;
 		while (true) {
@@ -108,6 +109,7 @@ public class Span {
 		return new Line(source, lineStart, lineEnd, lineNumber);
 	}
 
+	/** A line within a Source **/
 	public static class Line {
 		private final Source source;
 		private final int start;

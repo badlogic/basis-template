@@ -38,9 +38,9 @@ public class TokenStream {
 			Token token = index < tokens.size() ? tokens.get(index) : null;
 			Span span = token != null ? token.getSpan() : null;
 			if (span == null)
-				Error.error("Expected '" + type.error + "', but reached the end of the source.", this);
+				Error.error("Expected '" + type.getError() + "', but reached the end of the source.", this);
 			else
-				Error.error("Expected '" + type.error + "', but got '" + token.getText() + "'", span);
+				Error.error("Expected '" + type.getError() + "', but got '" + token.getText() + "'", span);
 			return null; // never reached
 		} else {
 			return tokens.get(index - 1);
@@ -102,7 +102,7 @@ public class TokenStream {
 		return false;
 	}
 
-	/** @return the source the tokens in this stream reference or null if there are no tokens in this stream. */
+	/** Returns the {@link Source} this stream wraps. */
 	public Source getSource () {
 		if (tokens.size() == 0) return null;
 		return tokens.get(0).getSpan().getSource();
