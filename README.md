@@ -169,7 +169,7 @@ A double {{123d}}.
 
 While in general you will not find a lot of need for using the suffixes, they can come in handy when calling functions and methods that require a specific type.
 
-> **Note**: the templating engine will perform type coercion when evaluating arithmethic operations, such as {{1b + 2.3}}. However, when calling functions or methods, the templating engine can not automatically perform such coercion. In these cases, you have to ensure fitting argument types manually by casting or using the above suffixes on literals.
+> **Note**: the templating engine will perform widening type coercion when evaluating arithmethic operations, such as `{{1b + 2.3}}`. In this case, the `byte` operand will first be widened to a double, to match the `double` operand.
 
 The templating language also supports character and string literals:
 
@@ -238,7 +238,7 @@ You can set a variable to any Java primitive or object, and even `null`. Variabl
 
 When the templating engine encounters a variable name in an expression, it looks into the context for its value. Unlike in other templating engines, if the value for that variable name is not found, a `RuntimeException` is thrown. If you really require "optional" variables, you can check for their existence by comparing the variable to `null`.
 
-When the variable value is evaluated, it takes on whatever type the corresponding Java object has. E.g. an `int` will be treated like an integer in expression, a `Map` like a map and so on. Apart from the implicit coercions in arithemtic expression, the templating engine will not perform any implicit type conversions!
+When the variable value is evaluated, it takes on whatever type the corresponding Java object has. E.g. an `int` will be treated like an integer in expression, a `Map` like a map and so on. The template engine will also perform widening type coercions for arithmetic expressions and passing arguments to methods and functions in the same way Java does.
 
 The evaluation of primitive types is straight forward. However, the real power of basis-template comes from being able to access fields and call methods on objects.
 
@@ -276,7 +276,7 @@ The twist is that basis-template will stomp over your access modifiers and allow
 Similar to fields, basis-template lets you call any method on any object.
 
 ```
-{{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{myClass.staticMethod()}}
+{{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{String.format(%010d", 93)}}
 ```
 
 ```java
@@ -291,18 +291,14 @@ public static void main (String[] args) {
 	Template template = loader.load("/methods.bt");
 	TemplateContext context = new TemplateContext();
 	context.set("myObject", new MyObject());
-	context.set("myClass", MyObject.class);
+	context.set("String", String.class);
 	System.out.println(template.render(context));
 }
 ```
 
 Again, basis-template allows you to ignore access modifiers entirely.
 
-One point of note is the fact, that basis-template can deal with overloaded methods. For this to work, the types of the arguments passed to an overloaded method must exactly match the method argument types. E.g. `{{myObject.add(1, 2f)}` would fail in the above example, as basis-template can not decide which of the two methods to call.
-
-But there is another issue with type matching. Consider `{{myObject.add(1b, 2b}}`. This will fail, because the templating engine is unable to find a method that exactly matches the argument types. As stated earlier, basis-template does not perform any implicit type coercions. You must ensure the types of arguments you pass to a method match the method's signature.
-
-The reason for this behaviour is rooted in performance considerations. The templating engine uses reflection to access members of a class. Finding the correct method to call given a set or arguments types is non-trivial, and may take a considerable amount of time. Implicit type coercion of arguments might be a future feature.
+One point of note is the fact, that basis-template can deal with overloaded methods. For this to work, the types of the arguments passed to an overloaded method must match the method argument types (which may require an implicit widnening type coercion). In the above example `{{myObject.add(1, 2)}}` will call the `MyObject.add(int, int)` method, because the two supplied arguments are of type `int`, where as `{{myObject.add(1f, 2f)}}` will call the `MyObject.add(float, float)` method because the supplied arguments are of type `float`. A widening type coercion will be attempted in a case like `{{myObject.add(1b, 1s)}}`. This would match the `MyObject.add(int, int)` method. through widening the `byte` and `short` arguments to `int`.
 
 ## Arrays and maps
 The templating language also grants you access to array elements and map entries:
@@ -321,7 +317,7 @@ template.render(context);
 
 Array elements are accessed via `[index]` like in Java. To access map entries, you can either call `Map.get()`, or use the short hand notation `map[key]`.
 
-Both array indices and map keys can be arbitrary expressions. Array indices must evaluate to an integer. Map keys must evalute to the key type of the map.
+Both array indices and map keys can be arbitrary expressions. Array indices must evaluate to an `ìnt`. Map keys must evalute to the key type of the map.
 
 ## Access chaining
 Like in Java, you can infinitely nest member, array element and map accesses:
@@ -347,6 +343,24 @@ The trick is to take a method reference (like `Math::cos`) and cast it to a fitt
 With this little trick, you can build up a "standard" library of sorts to be used in all our templates, with short function names like `trim`, `abs` and so on.
 
 > **Note**: Basis-template does not come with any built-in functions out of the box. If you happen to create a set of such functions, send a PR!
+
+This feature also allows you to store "functions" in fields, arrays, maps or variables, essentially making "functions" first class citizens.
+
+```
+This calls Math::abs on the argument: {{array[0](123)}}
+This calls Math::signum on the argument: {{array[1](-7)}}
+This calls the function in the field myFunc: {{myObject.myFunc(3)}}
+```
+
+```java
+class MyObject {
+	IntFunction<Integer> myFunc = v -> return v + 1;
+}
+
+context.set("myObject", new MyObject());
+context.set("array", new IntFunction[] {Math::abs, Math::signum});
+result = template.render(context);
+```
 
 Alternatively to injecting functional interface instances via the template context, you can also create functions directly in your template. These are called macros.
 

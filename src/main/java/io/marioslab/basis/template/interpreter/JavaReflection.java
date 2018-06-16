@@ -69,66 +69,40 @@ public class JavaReflection extends Reflection {
 			methodCache.put(cls, methods);
 		}
 
-		Class[][] parameterTypes = new Class[2][arguments.length];
+		Class[] parameterTypes = new Class[arguments.length];
 		for (int i = 0; i < arguments.length; i++) {
-			parameterTypes[0][i] = arguments[i] == null ? Object.class : arguments[i].getClass();
-		}
-		for (int i = 0; i < arguments.length; i++) {
-			Class argType = arguments[i] == null ? Object.class : arguments[i].getClass();
-			if (argType == Boolean.class)
-				argType = boolean.class;
-			else if (argType == Byte.class)
-				argType = byte.class;
-			else if (argType == Character.class)
-				argType = char.class;
-			else if (argType == Short.class)
-				argType = short.class;
-			else if (argType == Integer.class)
-				argType = int.class;
-			else if (argType == Long.class)
-				argType = long.class;
-			else if (argType == Float.class)
-				argType = float.class;
-			else if (argType == Double.class) argType = double.class;
-			parameterTypes[1][i] = argType;
+			parameterTypes[i] = arguments[i] == null ? Object.class : arguments[i].getClass();
 		}
 
-		JavaReflection.MethodSignature[] signatures = new JavaReflection.MethodSignature[] {new MethodSignature(name, parameterTypes[0]),
-			new MethodSignature(name, parameterTypes[1])};
-
-		Method method = methods.get(signatures[0]);
-		if (method == null) method = methods.get(signatures[1]);
+		JavaReflection.MethodSignature signature = new MethodSignature(name, parameterTypes);
+		Method method = methods.get(signature);
 
 		if (method == null) {
-			for (int i = 0; i < 2; i++) {
-				try {
-					if (name == null)
-						method = cls.getDeclaredMethods()[0];
-					else
-						method = cls.getDeclaredMethod(name, parameterTypes[i]);
-					method.setAccessible(true);
-					methods.put(signatures[i], method);
-					break;
-				} catch (Throwable e) {
-					// fall through
+			try {
+				if (name == null) {
+					method = cls.getDeclaredMethods()[0];
+				} else {
+					method = findMethod(cls, name, parameterTypes);
 				}
+				method.setAccessible(true);
+				methods.put(signature, method);
+			} catch (Throwable e) {
+				// fall through
 			}
 
 			if (method == null) {
 				Class parentClass = cls.getSuperclass();
 				while (parentClass != Object.class && parentClass != null) {
-					for (int i = 0; i < 2; i++) {
-						try {
-							if (name == null)
-								method = parentClass.getDeclaredMethods()[0];
-							else
-								method = parentClass.getDeclaredMethod(name, parameterTypes[i]);
-							method.setAccessible(true);
-							methods.put(signatures[i], method);
-							break;
-						} catch (Throwable e) {
-							// fall through
+					try {
+						if (name == null)
+							method = parentClass.getDeclaredMethods()[0];
+						else {
+							method = findMethod(parentClass, name, parameterTypes);
 						}
+						method.setAccessible(true);
+						methods.put(signature, method);
+					} catch (Throwable e) {
+						// fall through
 					}
 					parentClass = parentClass.getSuperclass();
 				}
@@ -136,6 +110,90 @@ public class JavaReflection extends Reflection {
 		}
 
 		return method;
+	}
+
+	/** Returns the method best matching the given signature, including type coercion, or null. **/
+	private static Method findMethod (Class cls, String name, Class[] parameterTypes) {
+		Method[] methods = cls.getDeclaredMethods();
+		Method foundMethod = null;
+		for (int i = 0, n = methods.length; i < n; i++) {
+			Method method = methods[i];
+
+			// if neither name or parameter list size match, bail on this method
+			if (!method.getName().equals(name)) continue;
+			if (method.getParameterTypes().length != parameterTypes.length) continue;
+
+			// Check if the types match.
+			Class[] otherTypes = method.getParameterTypes();
+			boolean match = true;
+			for (int ii = 0, nn = parameterTypes.length; ii < nn; ii++) {
+				Class type = parameterTypes[ii];
+				Class otherType = otherTypes[ii];
+
+				if (!otherType.isAssignableFrom(type)) {
+					if (!isPrimitiveAssignableFrom(type, otherType)) {
+						if (!isCoercible(type, otherType)) {
+							match = false;
+							break;
+						}
+					}
+				}
+			}
+			if (match) foundMethod = method;
+		}
+		return foundMethod;
+	}
+
+	/** Returns whether the from type can be assigned to the to type, assuming either type is a (boxed) primitive type. We can
+	 * relax the type constraint a little, as we'll invoke a method via reflection. That means the from type will always be boxed,
+	 * as the {@link Method#invoke(Object, Object...)} method takes objects. **/
+	private static boolean isPrimitiveAssignableFrom (Class from, Class to) {
+		if ((from == Boolean.class || from == boolean.class) && (to == boolean.class || to == Boolean.class)) return true;
+		if ((from == Integer.class || from == int.class) && (to == int.class || to == Integer.class)) return true;
+		if ((from == Float.class || from == float.class) && (to == float.class || to == Float.class)) return true;
+		if ((from == Double.class || from == double.class) && (to == double.class || to == Double.class)) return true;
+		if ((from == Byte.class || from == byte.class) && (to == byte.class || to == Byte.class)) return true;
+		if ((from == Short.class || from == short.class) && (to == short.class || to == Short.class)) return true;
+		if ((from == Long.class || from == long.class) && (to == long.class || to == Long.class)) return true;
+		if ((from == Character.class || from == char.class) && (to == char.class || to == Character.class)) return true;
+		return false;
+	}
+
+	/** Returns whether the from type can be coerced to the to type. The coercion rules follow those of Java. See JLS 5.1.2
+	 * https://docs.oracle.com/javase/specs/jls/se7/html/jls-5.html **/
+	private static boolean isCoercible (Class from, Class to) {
+		if (from == Integer.class || from == int.class) {
+			return to == float.class || to == Float.class || to == double.class || to == Double.class || to == long.class || to == Long.class;
+		}
+
+		if (from == Float.class || from == float.class) {
+			return to == double.class || to == Double.class;
+		}
+
+		if (from == Double.class || from == double.class) {
+			return false;
+		}
+
+		if (from == Character.class || from == char.class) {
+			return to == int.class || to == Integer.class || to == float.class || to == Float.class || to == double.class || to == Double.class || to == long.class
+				|| to == Long.class;
+		}
+
+		if (from == Byte.class || from == byte.class) {
+			return to == int.class || to == Integer.class || to == float.class || to == Float.class || to == double.class || to == Double.class || to == long.class
+				|| to == Long.class || to == short.class || to == Short.class;
+		}
+
+		if (from == Short.class || from == short.class) {
+			return to == int.class || to == Integer.class || to == float.class || to == Float.class || to == double.class || to == Double.class || to == long.class
+				|| to == Long.class;
+		}
+
+		if (from == Long.class || from == long.class) {
+			return to == float.class || to == Float.class || to == double.class || to == Double.class;
+		}
+
+		return false;
 	}
 
 	@Override

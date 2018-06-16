@@ -15,7 +15,7 @@ public class Methods {
 		Template template = loader.load("/methods.bt");
 		TemplateContext context = new TemplateContext();
 		context.set("myObject", new MyObject());
-		context.set("myClass", MyObject.class);
+		context.set("String", String.class);
 		System.out.println(template.render(context));
 	}
 }

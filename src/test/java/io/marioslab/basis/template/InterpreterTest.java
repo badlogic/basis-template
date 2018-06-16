@@ -25,7 +25,7 @@ public class InterpreterTest {
 		private int field3 = 789;
 		private OtherObject other = new OtherObject();
 		private String text = "Test";
-		private IntFunction<Integer> func = (IntFunction<Integer>)Math::abs;
+		private IntFunction<Integer> func = v -> v + 1;
 
 		public int getField2 () {
 			return field2;
@@ -162,6 +162,30 @@ public class InterpreterTest {
 	}
 
 	@Test
+	public void testParameterCoercian () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{object.add(1b, 2b)}}");
+		Template template = loader.load("hello");
+		context.set("object", new MyObject());
+		String result = template.render(context);
+		assertEquals("3", result);
+	}
+
+	@Test
+	public void testArrayIndexCoercion () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{array[1b]}}");
+		Template template = loader.load("hello");
+		context.set("array", new int[] {1, 3, 4});
+		String result = template.render(context);
+		assertEquals("3", result);
+	}
+
+	@Test
 	public void testStaticMethodCall () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 
@@ -180,13 +204,13 @@ public class InterpreterTest {
 
 		loader.set("hello", "{{abs(123)}}");
 		Template template = loader.load("hello");
-		context.set("abs", (IntFunction)Math::abs);
+		context.set("abs", (IntFunction<Integer>)Math::abs);
 		String result = template.render(context);
 		assertEquals("123", result);
 
 		loader.set("hello2", "{{array[0](123)}}");
 		template = loader.load("hello2");
-		context.set("array", new IntFunction[] {Math::abs});
+		context.set("array", new IntFunction[] {Math::abs, Math::signum});
 		result = template.render(context);
 		assertEquals("123", result);
 
@@ -194,7 +218,7 @@ public class InterpreterTest {
 		template = loader.load("hello3");
 		context.set("object", new MyObject());
 		result = template.render(context);
-		assertEquals("123", result);
+		assertEquals("124", result);
 	}
 
 	@Test
