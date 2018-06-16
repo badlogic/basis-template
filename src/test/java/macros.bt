@@ -1,0 +1,7 @@
+{{
+macro upperCase(a)	
+	a.toUpperCase()
+end
+}}
+
+Hey, {{upperCase("it'se me, Mario")}}

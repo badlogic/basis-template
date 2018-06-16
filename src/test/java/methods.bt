@@ -1,0 +1,1 @@
+{{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{myClass.staticMethod()}}

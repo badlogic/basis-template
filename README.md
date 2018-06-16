@@ -169,7 +169,7 @@ A double {{123d}}.
 
 While in general you will not find a lot of need for using the suffixes, they can come in handy when calling functions and methods that require a specific type.
 
-> **Note**: the templating engine will perform type coercian when evaluating arithmethic operations, such as {{1b + 2.3}}. However, when calling functions or methods, the templating engine can not automatically perform such coercian. In these cases, you have to ensure fitting argument types manually by casting or using the above suffixes on literals.
+> **Note**: the templating engine will perform type coercion when evaluating arithmethic operations, such as {{1b + 2.3}}. However, when calling functions or methods, the templating engine can not automatically perform such coercion. In these cases, you have to ensure fitting argument types manually by casting or using the above suffixes on literals.
 
 The templating language also supports character and string literals:
 
@@ -192,7 +192,7 @@ Not entirely unexpectedly, the templating engine supports the common arithmetic 
 
 Arithmetic operators evaluate to the wider type of their two operands. E.g. when adding a `byte` and a `float`, the resulting value will have type `float`.
 
-As in Java, the `+` operator may also be used to concatenate a `String` with another value. The template engine will perform automatic coercian from the non-string operand to string in this case, e.g. `{{"Lucky number " + 9}}`.
+As in Java, the `+` operator may also be used to concatenate a `String` with another value. The template engine will perform automatic coercion from the non-string operand to string in this case, e.g. `{{"Lucky number " + 9}}`.
 
 ### Comparison Operators
 All comparison operators you know from Java are at your disposal, e.g. `{{23 < 34}}`, `{{23 <= 34}}`, `{{23 > 34}}`, `{{23 >= 34}}`, `{{ true != false }}`, `{{23 == 34}}`.
@@ -238,15 +238,15 @@ You can set a variable to any Java primitive or object, and even `null`. Variabl
 
 When the templating engine encounters a variable name in an expression, it looks into the context for its value. Unlike in other templating engines, if the value for that variable name is not found, a `RuntimeException` is thrown. If you really require "optional" variables, you can check for their existence by comparing the variable to `null`.
 
-When the variable value is evaluated, it takes on whatever type the corresponding Java object has. E.g. an `int` will be treated like an integer in expression, a `Map` like a map and so on. Apart from the implicit coercians in arithemtic expression, the templating engine will not perform any implicit type conversions!
+When the variable value is evaluated, it takes on whatever type the corresponding Java object has. E.g. an `int` will be treated like an integer in expression, a `Map` like a map and so on. Apart from the implicit coercions in arithemtic expression, the templating engine will not perform any implicit type conversions!
 
 The evaluation of primitive types is straight forward. However, the real power of basis-template comes from being able to access fields and call methods on objects.
 
-### Accessing fields
-When a context variable points to an object, you can access that object's fields like in Java:
+## Accessing fields
+When a context variable points to an object, you can access that object's fields like in Java (with one slight twist):
 
 ```
-Basis-template can access private {{myObject.privateField}}, package private {{myObject.packagePrivateField}}, protected {{myObject.protectedField}}, and public {{myObject.publicField}} fields. It can also access static fields.
+Basis-template can access private {{myObject.privateField}}, package private {{myObject.packagePrivateField}}, protected {{myObject.protectedField}}, and public {{myObject.publicField}} fields. It can also access static {{myClass.STATIC_FIELD}} fields.
 ```
 
 ```java
@@ -263,11 +263,128 @@ public static void main (String[] args) {
 	Template template = loader.load("/fields.bt");
 	TemplateContext context = new TemplateContext();
 	context.set("myObject", new MyObject());
+	context.set("myClass", MyObject.class);
 	System.out.println(template.render(context));
 }
 ```
 
-### Calling methods
-### Arrays and maps
+The twist is that basis-template will stomp over your access modifiers and allow reading private, package private and protected fields. Field access is slightly more performant in basis-template than method invocations. This little unsafe feature lets you wrangle out a tiny bit more performance of your templates.
+
+> **Note**: Unlike other templating engines, basis-template does not resolve getter methods following the Java bean convention. Either access the field by name, or invoke the getter.
+
+## Calling methods
+Similar to fields, basis-template lets you call any method on any object.
+
+```
+{{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{myClass.staticMethod()}}
+```
+
+```java
+public static class MyObject {
+	private int add (int a, int b) { return a + b; }
+	protected float add (float a, float b) { return a + b; }
+	public static String staticMethod () { return "Hello"; }
+}
+
+public static void main (String[] args) {
+	TemplateLoader loader = new ClasspathTemplateLoader();
+	Template template = loader.load("/methods.bt");
+	TemplateContext context = new TemplateContext();
+	context.set("myObject", new MyObject());
+	context.set("myClass", MyObject.class);
+	System.out.println(template.render(context));
+}
+```
+
+Again, basis-template allows you to ignore access modifiers entirely.
+
+One point of note is the fact, that basis-template can deal with overloaded methods. For this to work, the types of the arguments passed to an overloaded method must exactly match the method argument types. E.g. `{{myObject.add(1, 2f)}` would fail in the above example, as basis-template can not decide which of the two methods to call.
+
+But there is another issue with type matching. Consider `{{myObject.add(1b, 2b}}`. This will fail, because the templating engine is unable to find a method that exactly matches the argument types. As stated earlier, basis-template does not perform any implicit type coercions. You must ensure the types of arguments you pass to a method match the method's signature.
+
+The reason for this behaviour is rooted in performance considerations. The templating engine uses reflection to access members of a class. Finding the correct method to call given a set or arguments types is non-trivial, and may take a considerable amount of time. Implicit type coercion of arguments might be a future feature.
+
+## Arrays and maps
+The templating language also grants you access to array elements and map entries:
+
+```
+{{myArray[2]}} {{myMap.get("key")}} {{myMap["key"]}}
+```
+
+```java
+TemplateContext context = new TemplateContext();
+context.set("myArray", new int[] { 1, 2, 3 });
+Map<String, String> myMap = new HashMap<String, String>();
+context.set("myMap", myMap);
+template.render(context);
+```
+
+Array elements are accessed via `[index]` like in Java. To access map entries, you can either call `Map.get()`, or use the short hand notation `map[key]`.
+
+Both array indices and map keys can be arbitrary expressions. Array indices must evaluate to an integer. Map keys must evalute to the key type of the map.
+
+## Access chaining
+Like in Java, you can infinitely nest member, array element and map accesses:
+
+```
+{{{myObject.aField[12]["key"].someMethod(1, 2).anotherMethod()}}
+```
+
 ### Functions
-### Macros
+Basis-template supports functions as first class citizens. For this to work, you must use a Java 8+ JVM. But how to set a variable to a Java "function"?
+
+```
+{{cos(3.14f)}}
+```
+```java
+TemplateContext context = new TemplateContext();
+context.set("cos", (DoubleFunction<Double>)Math::cos);
+template.render(context);
+```
+
+The trick is to take a method reference (like `Math::cos`) and cast it to a fitting `FunctionalInterface`. The Java compiler will translate this into an anonymous class instance with one method called `apply`. When such an instance is set as the value of a variable, and the template engine encounters that variable as a name of a function to call, it is smart enough to resolve the `apply` function and reflectively call it.
+
+With this little trick, you can build up a "standard" library of sorts to be used in all our templates, with short function names like `trim`, `abs` and so on.
+
+> **Note**: Basis-template does not come with any built-in functions out of the box. If you happen to create a set of such functions, send a PR!
+
+Alternatively to injecting functional interface instances via the template context, you can also create functions directly in your template. These are called macros.
+
+## Macros
+A macro consists of a name, an argument list and a macro body. They are essentially functions defined directly in your template:
+
+```
+{{macro upperCase(a)
+	a.toUpperCase()
+end}}
+
+Hey, {{upperCase("it'se me, Mario")}}
+
+{{upperCase("oh no")}}
+```
+
+The macro declaration (and definition) itself does not emit anything. However, when we call the macro as a function, it's body text and code spans will be evaluated and emitted according to the arguments provided.
+
+Also visible in this example: you can write a full program inside a single `{{}}` block!
+
+> **Note**: When a macro is called, it gets its own context. This context only contains the arguments. Accessing the context of the enclosing template is not possible. This might change in the future.
+
+> **Note**: Macros can currently not return a value to be used in an expression. A macro will always return `null` semantically. This might change in the future.
+
+## Assignments
+The templating language allows a limited form of assignements. You can set the value of a context variable in your template. This can be useful when you want to store function or method call return values:
+
+```
+{{{a = 10}}} {{b = abs(-234)}}
+```
+
+If the variable name already exists in the context, its value will be replaced. If the variable name did not exist already, it is created.
+
+Assigning new values to object fields, arrays or maps is not supported and will never be supported, as this would allow modification of Java side objects from within the template.
+
+## Control flow
+### If
+### For
+### While
+
+## Includes
