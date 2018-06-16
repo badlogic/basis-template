@@ -536,10 +536,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (Object value : map.values()) {
 					context.set(valueName, value);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof Iterable) {
 			if (forStatement.getIndexOrKeyName() != null) {
@@ -555,10 +557,24 @@ public class AstInterpreter {
 				context.pop();
 			} else {
 				Iterator iter = ((Iterable)mapOrArray).iterator();
+				context.push();
 				while (iter.hasNext()) {
 					context.set(valueName, iter.next());
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
+			}
+		} else if (mapOrArray instanceof Iterator) {
+			if (forStatement.getIndexOrKeyName() != null) {
+				Error.error("Can not do indexed/keyed for loop on an iterator.", forStatement.getMapOrArray().getSpan());
+			} else {
+				Iterator iter = (Iterator)mapOrArray;
+				context.push();
+				while (iter.hasNext()) {
+					context.set(valueName, iter.next());
+					interpretNodeList(forStatement.getBody(), template, context, out);
+				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof int[]) {
 			int[] array = (int[])mapOrArray;
@@ -572,10 +588,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof float[]) {
 			float[] array = (float[])mapOrArray;
@@ -589,10 +607,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof double[]) {
 			double[] array = (double[])mapOrArray;
@@ -606,10 +626,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof boolean[]) {
 			boolean[] array = (boolean[])mapOrArray;
@@ -623,10 +645,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof char[]) {
 			char[] array = (char[])mapOrArray;
@@ -640,10 +664,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof short[]) {
 			short[] array = (short[])mapOrArray;
@@ -657,10 +683,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof byte[]) {
 			byte[] array = (byte[])mapOrArray;
@@ -674,10 +702,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof long[]) {
 			long[] array = (long[])mapOrArray;
@@ -691,10 +721,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else if (mapOrArray instanceof Object[]) {
 			Object[] array = (Object[])mapOrArray;
@@ -708,10 +740,12 @@ public class AstInterpreter {
 				}
 				context.pop();
 			} else {
+				context.push();
 				for (int i = 0, n = array.length; i < n; i++) {
 					context.set(valueName, array[i]);
 					interpretNodeList(forStatement.getBody(), template, context, out);
 				}
+				context.pop();
 			}
 		} else {
 			Error.error("Expected a map, an array or an iterable, got " + mapOrArray, forStatement.getMapOrArray().getSpan());
@@ -723,7 +757,9 @@ public class AstInterpreter {
 		Object condition = interpretNode(ifStatement.getCondition(), template, context, out);
 		if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, ifStatement.getCondition().getSpan());
 		if ((Boolean)condition) {
+			context.push();
 			interpretNodeList(ifStatement.getTrueBlock(), template, context, out);
+			context.pop();
 			return null;
 		}
 
@@ -732,17 +768,22 @@ public class AstInterpreter {
 				condition = interpretNode(elseIf.getCondition(), template, context, out);
 				if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, elseIf.getCondition().getSpan());
 				if ((Boolean)condition) {
+					context.push();
 					interpretNodeList(elseIf.getTrueBlock(), template, context, out);
+					context.pop();
 					return null;
 				}
 			}
 		}
 
+		context.push();
 		interpretNodeList(ifStatement.getFalseBlock(), template, context, out);
+		context.pop();
 		return null;
 	}
 
 	private static Object interpretWhile (WhileStatement whileStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
+		context.push();
 		while (true) {
 			Object condition = interpretNode(whileStatement.getCondition(), template, context, out);
 			if (!(condition instanceof Boolean))
@@ -750,6 +791,7 @@ public class AstInterpreter {
 			if (!((Boolean)condition)) break;
 			interpretNodeList(whileStatement.getBody(), template, context, out);
 		}
+		context.pop();
 		return null;
 	}
 

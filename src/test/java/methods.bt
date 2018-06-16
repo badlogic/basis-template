@@ -1,1 +1,5 @@
-{{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{String.format("%010d", 93)}}
+{{myObject.add(1, 2)}} {{myObject.add(1f, 2f)}} {{myClass.staticMethod()}}
+
+{{for value in range(0, 4)}}
+	Ranged value: {{value}}
+{{end}} 
