@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 
+import io.marioslab.basis.template.interpreter.AstInterpreter;
 import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.Macro;
 import io.marioslab.basis.template.parsing.Ast.Node;
@@ -26,11 +27,11 @@ public class Template {
 			macro.setTemplate(this);
 	}
 
-	List<Node> getNodes () {
+	public List<Node> getNodes () {
 		return nodes;
 	}
 
-	Macros getMacros () {
+	public Macros getMacros () {
 		return macros;
 	}
 

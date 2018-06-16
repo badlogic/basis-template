@@ -4,6 +4,7 @@ package io.marioslab.basis.template.parsing;
 import java.util.List;
 
 import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.TemplateLoader.Source;
 
 /** Iterates over a list of {@link Token} instances, provides methods to match expected tokens and throw errors in case of a
  * mismatch. */
@@ -102,7 +103,7 @@ public class TokenStream {
 	}
 
 	/** @return the source the tokens in this stream reference or null if there are no tokens in this stream. */
-	public String getSource () {
+	public Source getSource () {
 		if (tokens.size() == 0) return null;
 		return tokens.get(0).getSpan().getSource();
 	}

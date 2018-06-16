@@ -1,10 +1,12 @@
 
 package io.marioslab.basis.template.parsing;
 
+import io.marioslab.basis.template.TemplateLoader.Source;
+
 /** A span within a source string denoted by start and end index, with the latter being exclusive. */
 public class Span {
 	/** the source string this span refers to **/
-	private final String source;
+	private final Source source;
 
 	/** start index in source string, starting at 0 **/
 	private int start;
@@ -14,33 +16,33 @@ public class Span {
 
 	private final String cachedText;
 
-	public Span (String source) {
-		this(source, 0, source.length());
+	public Span (Source source) {
+		this(source, 0, source.getContent().length());
 	}
 
-	public Span (String source, int start, int end) {
+	public Span (Source source, int start, int end) {
 		if (start > end) throw new IllegalArgumentException("Start must be <= end.");
 		if (start < 0) throw new IndexOutOfBoundsException("Start must be >= 0.");
-		if (start > source.length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
-		if (end > source.length()) throw new IndexOutOfBoundsException("End outside of string.");
+		if (start > source.getContent().length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
+		if (end > source.getContent().length()) throw new IndexOutOfBoundsException("End outside of string.");
 
 		this.source = source;
 		this.start = start;
 		this.end = end;
-		this.cachedText = source.substring(start, end);
+		this.cachedText = source.getContent().substring(start, end);
 	}
 
 	public Span (Span start, Span end) {
 		if (!start.source.equals(end.source)) throw new IllegalArgumentException("The two spans do not reference the same source.");
 		if (start.start > end.end) throw new IllegalArgumentException("Start must be <= end.");
 		if (start.start < 0) throw new IndexOutOfBoundsException("Start must be >= 0.");
-		if (start.start > start.source.length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
-		if (end.end > start.source.length()) throw new IndexOutOfBoundsException("End outside of string.");
+		if (start.start > start.source.getContent().length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
+		if (end.end > start.source.getContent().length()) throw new IndexOutOfBoundsException("End outside of string.");
 
 		this.source = start.source;
 		this.start = start.start;
 		this.end = end.end;
-		this.cachedText = source.substring(this.start, this.end);
+		this.cachedText = source.getContent().substring(this.start, this.end);
 	}
 
 	/** @return the text referenced by this span **/
@@ -59,7 +61,7 @@ public class Span {
 	}
 
 	/** @return the source string this span references. **/
-	public String getSource () {
+	public Source getSource () {
 		return source;
 	}
 
@@ -73,7 +75,7 @@ public class Span {
 		int lineStart = start;
 		while (true) {
 			if (lineStart < 0) break;
-			char c = source.charAt(lineStart);
+			char c = source.getContent().charAt(lineStart);
 			if (c == '\n') {
 				lineStart = lineStart + 1;
 				break;
@@ -84,8 +86,8 @@ public class Span {
 
 		int lineEnd = end;
 		while (true) {
-			if (lineEnd > source.length() - 1) break;
-			char c = source.charAt(lineEnd);
+			if (lineEnd > source.getContent().length() - 1) break;
+			char c = source.getContent().charAt(lineEnd);
 			if (c == '\n') {
 				break;
 			}
@@ -95,7 +97,7 @@ public class Span {
 		int lineNumber = 0;
 		int idx = lineStart;
 		while (idx > 0) {
-			char c = source.charAt(idx);
+			char c = source.getContent().charAt(idx);
 			if (c == '\n') {
 				lineNumber++;
 			}
@@ -107,20 +109,19 @@ public class Span {
 	}
 
 	public static class Line {
-		private final String source;
+		private final Source source;
 		private final int start;
 		private final int end;
 		private final int lineNumber;
 
-		public Line (String source, int start, int end, int lineNumber) {
-			super();
+		public Line (Source source, int start, int end, int lineNumber) {
 			this.source = source;
 			this.start = start;
 			this.end = end;
 			this.lineNumber = lineNumber;
 		}
 
-		public String getSource () {
+		public Source getSource () {
 			return source;
 		}
 
@@ -137,7 +138,7 @@ public class Span {
 		}
 
 		public String getText () {
-			return source.substring(start, end);
+			return source.getContent().substring(start, end);
 		}
 	}
 }

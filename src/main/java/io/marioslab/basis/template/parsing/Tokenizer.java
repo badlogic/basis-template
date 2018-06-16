@@ -5,15 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.TemplateLoader.Source;
 
 public class Tokenizer {
 
 	/** Tokenizes the source into tokens. Text blocks not enclosed in {{ }} are returned as a single token of type
 	 * {@link TokenType.TextBlock}. {{ and }} are not returned as individual tokens. See {@link TokenType} for the list of tokens
 	 * this tokenizer understands. */
-	public List<Token> tokenize (String source) {
+	public List<Token> tokenize (Source source) {
 		List<Token> tokens = new ArrayList<Token>();
-		if (source.length() == 0) return tokens;
+		if (source.getContent().length() == 0) return tokens;
 		CharacterStream stream = new CharacterStream(source);
 		stream.startSpan();
 
@@ -36,7 +37,7 @@ public class Tokenizer {
 	}
 
 	private static List<Token> tokenizeCodeSpan (Span span) {
-		String source = span.getSource();
+		Source source = span.getSource();
 		CharacterStream stream = new CharacterStream(source, span.getStart(), span.getEnd());
 		List<Token> tokens = new ArrayList<Token>();
 

@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.parsing.Token;
 import io.marioslab.basis.template.parsing.TokenType;
 import io.marioslab.basis.template.parsing.Tokenizer;
@@ -15,27 +16,27 @@ import io.marioslab.basis.template.parsing.Tokenizer;
 public class TokenizerTest {
 	@Test
 	public void testEmptysegment () {
-		List<Token> tokens = new Tokenizer().tokenize("");
+		List<Token> tokens = new Tokenizer().tokenize(new Source("test", ""));
 		assertEquals("Tokens are not empty", 0, tokens.size());
 	}
 
 	@Test
 	public void testNoTemplateTemplateSegment () {
-		List<Token> tokens = new Tokenizer().tokenize("this is a test");
+		List<Token> tokens = new Tokenizer().tokenize(new Source("test", "this is a test"));
 		assertEquals("Expected one text block token", 1, tokens.size());
 		assertEquals("Expected one text block token", "this is a test", tokens.get(0).getText());
 	}
 
 	@Test
 	public void testOnlyTemplateTemplateSegment () {
-		List<Token> tokens = new Tokenizer().tokenize("{{ identifier }}");
+		List<Token> tokens = new Tokenizer().tokenize(new Source("test", "{{ identifier }}"));
 		assertEquals("Expected one identifier token", 1, tokens.size());
 		assertEquals("Expected one identifier token", "identifier", tokens.get(0).getText());
 	}
 
 	@Test
 	public void testMixedTokens () {
-		List<Token> tokens = new Tokenizer().tokenize("{{ identifier }} and a different segment {{identifier2}} fin.");
+		List<Token> tokens = new Tokenizer().tokenize(new Source("test", "{{ identifier }} and a different segment {{identifier2}} fin."));
 		assertEquals("Expected one template token", 4, tokens.size());
 		assertEquals("identifier", tokens.get(0).getText());
 		assertEquals(" and a different segment ", tokens.get(1).getText());
@@ -46,7 +47,7 @@ public class TokenizerTest {
 	@Test
 	public void testMissingClosingTag () {
 		try {
-			new Tokenizer().tokenize("{{ this lacks a closing tag");
+			new Tokenizer().tokenize(new Source("test", "{{ this lacks a closing tag"));
 			fail("Missing closing tag not detected");
 		} catch (RuntimeException t) {
 			// expected.
@@ -55,8 +56,8 @@ public class TokenizerTest {
 
 	@Test
 	public void testTokenizer () {
-		List<Token> tokens = new Tokenizer().tokenize(
-			"{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; 1b 1s 1l 1f 1.0d 'c' '\\n'}}");
+		List<Token> tokens = new Tokenizer().tokenize(new Source("test",
+			"{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; 1b 1s 1l 1f 1.0d 'c' '\\n'}}"));
 		assertEquals("Expected 35 tokens", 35, tokens.size());
 		assertEquals(TokenType.Period, tokens.get(0).getType());
 		assertEquals(TokenType.Plus, tokens.get(1).getType());

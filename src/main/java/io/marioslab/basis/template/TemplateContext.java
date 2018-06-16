@@ -19,7 +19,7 @@ public class TemplateContext {
 		return this;
 	}
 
-	Object get (String name) {
+	public Object get (String name) {
 		for (int i = scopes.size() - 1; i >= 0; i--) {
 			Map<String, Object> ctx = scopes.get(i);
 			Object value = ctx.get(name);
@@ -28,12 +28,12 @@ public class TemplateContext {
 		return null;
 	}
 
-	void push () {
+	public void push () {
 		Map<String, Object> newScope = freeScopes.size() > 0 ? freeScopes.remove(freeScopes.size() - 1) : new HashMap<String, Object>();
 		scopes.add(newScope);
 	}
 
-	void pop () {
+	public void pop () {
 		Map<String, Object> oldScope = scopes.remove(scopes.size() - 1);
 		oldScope.clear();
 		freeScopes.add(oldScope);

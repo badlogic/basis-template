@@ -1,24 +1,26 @@
 
 package io.marioslab.basis.template.parsing;
 
+import io.marioslab.basis.template.TemplateLoader.Source;
+
 /** Wraps a source string and handles traversing the contained characters. Manages a current {@link Span} via the
  * {@link #startSpan()} and {@link #endSpan()} methods. */
 public class CharacterStream {
-	private final String source;
+	private final Source source;
 	private int index = 0;
 	private final int end;
 
 	private int spanStart = 0;
 
-	public CharacterStream (String source) {
-		this(source, 0, source.length());
+	public CharacterStream (Source source) {
+		this(source, 0, source.getContent().length());
 	}
 
-	public CharacterStream (String source, int start, int end) {
+	public CharacterStream (Source source, int start, int end) {
 		if (start > end) throw new IllegalArgumentException("Start must be <= end.");
 		if (start < 0) throw new IndexOutOfBoundsException("Start must be >= 0.");
-		if (start > source.length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
-		if (end > source.length()) throw new IndexOutOfBoundsException("End outside of string.");
+		if (start > source.getContent().length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
+		if (end > source.getContent().length()) throw new IndexOutOfBoundsException("End outside of string.");
 
 		this.source = source;
 		this.index = start;
@@ -33,13 +35,13 @@ public class CharacterStream {
 	/** @return the next character without advancing the stream **/
 	public char peek () {
 		if (!hasMore()) throw new RuntimeException("No more characters in stream.");
-		return source.charAt(index++);
+		return source.getContent().charAt(index++);
 	}
 
 	/** @return the next character and advance the stream **/
 	public char consume () {
 		if (!hasMore()) throw new RuntimeException("No more characters in stream.");
-		return source.charAt(index++);
+		return source.getContent().charAt(index++);
 	}
 
 	/** Matches the given needle with the next characters. Returns true if the needle is matched, false otherwise. If there's a
@@ -48,7 +50,7 @@ public class CharacterStream {
 		int needleLength = needle.length();
 		for (int i = 0, j = index; i < needleLength; i++, j++) {
 			if (index >= end) return false;
-			if (needle.charAt(i) != source.charAt(j)) return false;
+			if (needle.charAt(i) != source.getContent().charAt(j)) return false;
 		}
 		if (consume) index += needleLength;
 		return true;
@@ -56,7 +58,7 @@ public class CharacterStream {
 
 	public boolean matchDigit (boolean consume) {
 		if (index >= end) return false;
-		char c = source.charAt(index);
+		char c = source.getContent().charAt(index);
 		if (Character.isDigit(c)) {
 			if (consume) index++;
 			return true;
@@ -66,7 +68,7 @@ public class CharacterStream {
 
 	public boolean matchIdentifierStart (boolean consume) {
 		if (index >= end) return false;
-		char c = source.charAt(index);
+		char c = source.getContent().charAt(index);
 		if (Character.isJavaIdentifierStart(c)) {
 			if (consume) index++;
 			return true;
@@ -76,7 +78,7 @@ public class CharacterStream {
 
 	public boolean matchIdentifierPart (boolean consume) {
 		if (index >= end) return false;
-		char c = source.charAt(index);
+		char c = source.getContent().charAt(index);
 		if (Character.isJavaIdentifierPart(c)) {
 			if (consume) index++;
 			return true;
@@ -87,7 +89,7 @@ public class CharacterStream {
 	public void skipWhiteSpace () {
 		while (true) {
 			if (index >= end) return;
-			char c = source.charAt(index);
+			char c = source.getContent().charAt(index);
 			if (c == ' ' || c == '\n' || c == '\r' || c == '\t') {
 				index++;
 				continue;

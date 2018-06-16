@@ -10,11 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.marioslab.basis.template.parsing.Parser;
 import io.marioslab.basis.template.parsing.Ast.Include;
-import io.marioslab.basis.template.parsing.Ast.Macro;
+import io.marioslab.basis.template.parsing.Parser;
 import io.marioslab.basis.template.parsing.Parser.ParserResult;
-import io.marioslab.basis.template.parsing.Span;
 
 public interface TemplateLoader {
 	public Template load (String path);
@@ -31,6 +29,48 @@ public interface TemplateLoader {
 		}
 	}
 
+	public static class Source {
+		private final String path;
+		private final String content;
+
+		public Source (String path, String content) {
+			this.path = path;
+			this.content = content;
+		}
+
+		public String getPath () {
+			return path;
+		}
+
+		public String getContent () {
+			return content;
+		}
+
+		@Override
+		public int hashCode () {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((content == null) ? 0 : content.hashCode());
+			result = prime * result + ((path == null) ? 0 : path.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals (Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			Source other = (Source)obj;
+			if (content == null) {
+				if (other.content != null) return false;
+			} else if (!content.equals(other.content)) return false;
+			if (path == null) {
+				if (other.path != null) return false;
+			} else if (!path.equals(other.path)) return false;
+			return true;
+		}
+	}
+
 	public abstract class CachingTemplateLoader implements TemplateLoader {
 		Map<String, Template> templates = new ConcurrentHashMap<String, Template>();
 
@@ -38,7 +78,7 @@ public interface TemplateLoader {
 		public Template load (String path) {
 			if (templates.containsKey(path)) return templates.get(path);
 			try {
-				String source = loadSource(path);
+				Source source = loadSource(path);
 				Template template = compileTemplate(source);
 				templates.put(path, template);
 				return template;
@@ -47,7 +87,7 @@ public interface TemplateLoader {
 			}
 		}
 
-		protected Template compileTemplate (String source) {
+		protected Template compileTemplate (Source source) {
 			ParserResult result = new Parser().parse(source);
 
 			// resolve includes and macros
@@ -60,14 +100,14 @@ public interface TemplateLoader {
 			return new Template(result.getNodes(), result.getMacros(), result.getIncludes());
 		}
 
-		protected abstract String loadSource (String path);
+		protected abstract Source loadSource (String path);
 	}
 
 	public static class ResourceTemplateLoader extends CachingTemplateLoader {
 		@Override
-		protected String loadSource (String path) {
+		protected Source loadSource (String path) {
 			try {
-				return StreamUtils.readString(TemplateLoader.class.getResourceAsStream(path));
+				return new Source(path, StreamUtils.readString(TemplateLoader.class.getResourceAsStream(path)));
 			} catch (Throwable t) {
 				throw new RuntimeException("Couldn't load template '" + path + "'.", t);
 			}
@@ -82,9 +122,9 @@ public interface TemplateLoader {
 		}
 
 		@Override
-		protected String loadSource (String path) {
+		protected Source loadSource (String path) {
 			try {
-				return StreamUtils.readString(new FileInputStream(new File(baseDirectory, path)));
+				return new Source(path, StreamUtils.readString(new FileInputStream(new File(baseDirectory, path))));
 			} catch (Throwable t) {
 				throw new RuntimeException("Couldn't load template '" + path + "'.", t);
 			}
@@ -92,17 +132,17 @@ public interface TemplateLoader {
 	}
 
 	public static class MapTemplateLoader extends CachingTemplateLoader {
-		private final Map<String, String> templates = new HashMap<String, String>();
+		private final Map<String, Source> templates = new HashMap<String, Source>();
 
 		public MapTemplateLoader set (String path, String template) {
 			super.templates.remove(path);
-			templates.put(path, template);
+			templates.put(path, new Source(path, template));
 			return this;
 		}
 
 		@Override
-		protected String loadSource (String path) {
-			String template = templates.get(path);
+		protected Source loadSource (String path) {
+			Source template = templates.get(path);
 			if (template == null) throw new RuntimeException("Couldn't load template '" + path + "'.");
 			return template;
 		}

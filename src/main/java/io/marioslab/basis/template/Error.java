@@ -1,6 +1,7 @@
 
 package io.marioslab.basis.template;
 
+import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.parsing.Span;
 import io.marioslab.basis.template.parsing.TokenStream;
 import io.marioslab.basis.template.parsing.Span.Line;
@@ -10,18 +11,18 @@ public class Error {
 		if (stream.hasMore())
 			error(message, stream.consume().getSpan());
 		else {
-			String source = stream.getSource();
+			Source source = stream.getSource();
 			if (source == null)
-				error(message, new Span(" ", 0, 1));
+				error(message, new Span(new Source("unknown", " "), 0, 1));
 			else
-				error(message, new Span(source, source.length() - 1, source.length()));
+				error(message, new Span(source, source.getContent().length() - 1, source.getContent().length()));
 		}
 	}
 
 	public static void error (String message, Span location) {
 
 		Line line = location.getLine();
-		message = "Error (line:" + line.getLineNumber() + "): " + message + "\n\n";
+		message = "Error (" + location.getSource().getPath() + ":" + line.getLineNumber() + "): " + message + "\n\n";
 		message += line.getText();
 		message += "\n";
 

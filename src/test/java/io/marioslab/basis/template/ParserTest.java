@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation.BinaryOperator;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
@@ -47,13 +48,13 @@ import io.marioslab.basis.template.parsing.Span;
 public class ParserTest {
 	@Test
 	public void testEmptySource () {
-		ParserResult template = new Parser().parse("");
+		ParserResult template = new Parser().parse(new Source("test", ""));
 		assertEquals("Empty source produced non-empty template", 0, template.getNodes().size());
 	}
 
 	@Test
 	public void testTextNodeOnly () {
-		ParserResult template = new Parser().parse("This is a text node");
+		ParserResult template = new Parser().parse(new Source("test", "This is a text node"));
 		assertEquals("Expected a single text node", 1, template.getNodes().size());
 		assertEquals("Expected a single text node", Text.class, template.getNodes().get(0).getClass());
 		assertEquals("This is a text node", template.getNodes().get(0).getSpan().getText());
@@ -61,12 +62,12 @@ public class ParserTest {
 
 	@Test
 	public void testEmptyNode () {
-		assertEquals("Expected 0 nodes", 0, new Parser().parse("{{ }}").getNodes().size());
+		assertEquals("Expected 0 nodes", 0, new Parser().parse(new Source("test", "{{ }}")).getNodes().size());
 	}
 
 	@Test
 	public void testBooleanLiteralNode () {
-		ParserResult template = new Parser().parse("{{true}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{true}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected BooleanLiteral node", BooleanLiteral.class, template.getNodes().get(0).getClass());
 		BooleanLiteral literal = (BooleanLiteral)template.getNodes().get(0);
@@ -75,7 +76,7 @@ public class ParserTest {
 
 	@Test
 	public void testFloatLiteralNode () {
-		ParserResult template = new Parser().parse("{{123.0}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{123.0}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", FloatLiteral.class, template.getNodes().get(0).getClass());
 		FloatLiteral literal = (FloatLiteral)template.getNodes().get(0);
@@ -84,7 +85,7 @@ public class ParserTest {
 
 	@Test
 	public void testDoubleLiteralNode () {
-		ParserResult template = new Parser().parse("{{123.0d}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{123.0d}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected DoubleLiteral node", DoubleLiteral.class, template.getNodes().get(0).getClass());
 		DoubleLiteral literal = (DoubleLiteral)template.getNodes().get(0);
@@ -93,7 +94,7 @@ public class ParserTest {
 
 	@Test
 	public void testByteLiteralNode () {
-		ParserResult template = new Parser().parse("{{123b}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{123b}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", ByteLiteral.class, template.getNodes().get(0).getClass());
 		ByteLiteral literal = (ByteLiteral)template.getNodes().get(0);
@@ -102,7 +103,7 @@ public class ParserTest {
 
 	@Test
 	public void testShortLiteralNode () {
-		ParserResult template = new Parser().parse("{{123s}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{123s}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", ShortLiteral.class, template.getNodes().get(0).getClass());
 		ShortLiteral literal = (ShortLiteral)template.getNodes().get(0);
@@ -111,7 +112,7 @@ public class ParserTest {
 
 	@Test
 	public void testIntegerLiteralNode () {
-		ParserResult template = new Parser().parse("{{123456}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{123456}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", IntegerLiteral.class, template.getNodes().get(0).getClass());
 		IntegerLiteral literal = (IntegerLiteral)template.getNodes().get(0);
@@ -120,7 +121,7 @@ public class ParserTest {
 
 	@Test
 	public void testCharacterLiteralNode () {
-		ParserResult template = new Parser().parse("{{'a' '\\n'}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{'a' '\\n'}}"));
 		assertEquals("Expected 2 node", 2, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", CharacterLiteral.class, template.getNodes().get(0).getClass());
 		CharacterLiteral literal = (CharacterLiteral)template.getNodes().get(0);
@@ -131,7 +132,7 @@ public class ParserTest {
 
 	@Test
 	public void testLongLiteralNode () {
-		ParserResult template = new Parser().parse("{{123456l}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{123456l}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected NumberLiteral node", LongLiteral.class, template.getNodes().get(0).getClass());
 		LongLiteral literal = (LongLiteral)template.getNodes().get(0);
@@ -140,7 +141,7 @@ public class ParserTest {
 
 	@Test
 	public void testStringLiteralNode () {
-		ParserResult template = new Parser().parse("{{\"this is a test\"}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{\"this is a test\"}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected StringLiteral node", StringLiteral.class, template.getNodes().get(0).getClass());
 		StringLiteral literal = (StringLiteral)template.getNodes().get(0);
@@ -149,7 +150,7 @@ public class ParserTest {
 
 	@Test
 	public void testVariableAccess () {
-		ParserResult template = new Parser().parse("{{a}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{a}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected VariableAccess node", VariableAccess.class, template.getNodes().get(0).getClass());
 		assertEquals("Expected variable name to be a", "a", ((VariableAccess)template.getNodes().get(0)).getVariableName().getText());
@@ -157,7 +158,7 @@ public class ParserTest {
 
 	@Test
 	public void testFunctionCall () {
-		ParserResult template = new Parser().parse("{{foo()}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo()}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected FunctionCall node", FunctionCall.class, template.getNodes().get(0).getClass());
 		FunctionCall call = (FunctionCall)template.getNodes().get(0);
@@ -167,7 +168,7 @@ public class ParserTest {
 
 	@Test
 	public void testFunctionCallWithArguments () {
-		ParserResult template = new Parser().parse("{{foo(a, b, c)}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo(a, b, c)}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected FunctionCall node", FunctionCall.class, template.getNodes().get(0).getClass());
 		FunctionCall call = (FunctionCall)template.getNodes().get(0);
@@ -177,7 +178,7 @@ public class ParserTest {
 
 	@Test
 	public void testMapAccess () {
-		ParserResult template = new Parser().parse("{{foo[1]}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo[1]}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected MapOrArrayAccess node", MapOrArrayAccess.class, template.getNodes().get(0).getClass());
 		MapOrArrayAccess mapAccess = (MapOrArrayAccess)template.getNodes().get(0);
@@ -190,7 +191,7 @@ public class ParserTest {
 
 	@Test
 	public void testMemberAccess () {
-		ParserResult template = new Parser().parse("{{foo.field}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo.field}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected MemberAccess node", MemberAccess.class, template.getNodes().get(0).getClass());
 		MemberAccess fieldAccess = (MemberAccess)template.getNodes().get(0);
@@ -202,7 +203,7 @@ public class ParserTest {
 
 	@Test
 	public void testMethodCall () {
-		ParserResult template = new Parser().parse("{{foo.method()}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo.method()}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected MethodCall node", MethodCall.class, template.getNodes().get(0).getClass());
 		MethodCall methodCall = (MethodCall)template.getNodes().get(0);
@@ -215,7 +216,7 @@ public class ParserTest {
 
 	@Test
 	public void testMethodCallWithArguments () {
-		ParserResult template = new Parser().parse("{{foo.method(a, b, c)}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo.method(a, b, c)}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected MethodCall node", MethodCall.class, template.getNodes().get(0).getClass());
 		MethodCall methodCall = (MethodCall)template.getNodes().get(0);
@@ -228,7 +229,7 @@ public class ParserTest {
 
 	@Test
 	public void testChainAccess () {
-		ParserResult template = new Parser().parse("{{foo.bar[0]()[0]().method(a, b, c).field}}");
+		ParserResult template = new Parser().parse(new Source("test", "{{foo.bar[0]()[0]().method(a, b, c).field}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());
 		assertEquals("Expected  node", MemberAccess.class, template.getNodes().get(0).getClass());
 		MemberAccess fieldAccess = (MemberAccess)template.getNodes().get(0);
@@ -244,7 +245,7 @@ public class ParserTest {
 
 	@Test
 	public void testTernaryOperator () {
-		ParserResult template = new Parser().parse("{{ \"hello\" ? 123 : true }}");
+		ParserResult template = new Parser().parse(new Source("test", "{{ \"hello\" ? 123 : true }}"));
 		List<Node> nodes = template.getNodes();
 		assertEquals(1, nodes.size());
 		assertEquals(TernaryOperation.class, nodes.get(0).getClass());
@@ -256,7 +257,7 @@ public class ParserTest {
 
 	@Test
 	public void testBinaryMathOperators () {
-		List<Node> nodes = new Parser().parse("{{ 1 + 2 * 3 / 4 % 5 }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ 1 + 2 * 3 / 4 % 5 }}")).getNodes();
 		BinaryOperation add = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Addition, add.getOperator());
 		assertEquals(IntegerLiteral.class, add.getLeftOperand().getClass());
@@ -273,37 +274,37 @@ public class ParserTest {
 
 	@Test
 	public void testComparisonOperators () {
-		List<Node> nodes = new Parser().parse("{{ 1 < 2 }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ 1 < 2 }}")).getNodes();
 		BinaryOperation less = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Less, less.getOperator());
 		assertEquals(IntegerLiteral.class, less.getLeftOperand().getClass());
 		assertEquals(IntegerLiteral.class, less.getRightOperand().getClass());
 
-		nodes = new Parser().parse("{{ 1 > 2 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ 1 > 2 }}")).getNodes();
 		BinaryOperation greater = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Greater, greater.getOperator());
 		assertEquals(IntegerLiteral.class, greater.getLeftOperand().getClass());
 		assertEquals(IntegerLiteral.class, greater.getRightOperand().getClass());
 
-		nodes = new Parser().parse("{{ 1 >= 2 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ 1 >= 2 }}")).getNodes();
 		BinaryOperation greaterEqual = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.GreaterEqual, greaterEqual.getOperator());
 		assertEquals(IntegerLiteral.class, greaterEqual.getLeftOperand().getClass());
 		assertEquals(IntegerLiteral.class, greaterEqual.getRightOperand().getClass());
 
-		nodes = new Parser().parse("{{ 1 <= 2 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ 1 <= 2 }}")).getNodes();
 		BinaryOperation lessEqual = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.LessEqual, lessEqual.getOperator());
 		assertEquals(IntegerLiteral.class, lessEqual.getLeftOperand().getClass());
 		assertEquals(IntegerLiteral.class, lessEqual.getRightOperand().getClass());
 
-		nodes = new Parser().parse("{{ 1 == 2 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ 1 == 2 }}")).getNodes();
 		BinaryOperation equal = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Equal, equal.getOperator());
 		assertEquals(IntegerLiteral.class, equal.getLeftOperand().getClass());
 		assertEquals(IntegerLiteral.class, equal.getRightOperand().getClass());
 
-		nodes = new Parser().parse("{{ 1 != 2 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ 1 != 2 }}")).getNodes();
 		BinaryOperation notEqual = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.NotEqual, notEqual.getOperator());
 		assertEquals(IntegerLiteral.class, notEqual.getLeftOperand().getClass());
@@ -312,13 +313,13 @@ public class ParserTest {
 
 	@Test
 	public void testLogicalOperators () {
-		List<Node> nodes = new Parser().parse("{{ true && false }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ true && false }}")).getNodes();
 		BinaryOperation and = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.And, and.getOperator());
 		assertEquals(BooleanLiteral.class, and.getLeftOperand().getClass());
 		assertEquals(BooleanLiteral.class, and.getRightOperand().getClass());
 
-		nodes = new Parser().parse("{{ true || false }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ true || false }}")).getNodes();
 		BinaryOperation or = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Or, or.getOperator());
 		assertEquals(BooleanLiteral.class, or.getLeftOperand().getClass());
@@ -327,22 +328,22 @@ public class ParserTest {
 
 	@Test
 	public void testUnaryOperators () {
-		List<Node> nodes = new Parser().parse("{{ !true }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ !true }}")).getNodes();
 		UnaryOperation and = (UnaryOperation)nodes.get(0);
 		assertEquals(UnaryOperator.Not, and.getOperator());
 		assertEquals(BooleanLiteral.class, and.getOperand().getClass());
 
-		nodes = new Parser().parse("{{ -1 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ -1 }}")).getNodes();
 		UnaryOperation negate = (UnaryOperation)nodes.get(0);
 		assertEquals(UnaryOperator.Negate, negate.getOperator());
 		assertEquals(IntegerLiteral.class, negate.getOperand().getClass());
 
-		nodes = new Parser().parse("{{ +1 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ +1 }}")).getNodes();
 		UnaryOperation positive = (UnaryOperation)nodes.get(0);
 		assertEquals(UnaryOperator.Positive, positive.getOperator());
 		assertEquals(IntegerLiteral.class, negate.getOperand().getClass());
 
-		nodes = new Parser().parse("{{  1 + -2 }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{  1 + -2 }}")).getNodes();
 		BinaryOperation add = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Addition, add.getOperator());
 		assertEquals(IntegerLiteral.class, add.getLeftOperand().getClass());
@@ -353,7 +354,7 @@ public class ParserTest {
 
 	@Test
 	public void testAssignment () {
-		List<Node> nodes = new Parser().parse("{{ a = 123 }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ a = 123 }}")).getNodes();
 		BinaryOperation and = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Assignment, and.getOperator());
 		assertEquals(VariableAccess.class, and.getLeftOperand().getClass());
@@ -362,7 +363,7 @@ public class ParserTest {
 
 	@Test
 	public void testOperatorPrecedence () {
-		List<Node> nodes = new Parser().parse("{{ a = 2 + 3 * -4 < !(true || 2 >= foo.bar[0](a, \"test\", 123, true)) }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ a = 2 + 3 * -4 < !(true || 2 >= foo.bar[0](a, \"test\", 123, true)) }}")).getNodes();
 		BinaryOperation assignment = (BinaryOperation)nodes.get(0);
 		assertEquals(BinaryOperator.Assignment, assignment.getOperator());
 		BinaryOperation less = (BinaryOperation)assignment.getRightOperand();
@@ -401,7 +402,7 @@ public class ParserTest {
 
 	@Test
 	public void testIfStatement () {
-		List<Node> nodes = new Parser().parse("{{ if true }} true body {{ end }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ if true }} true body {{ end }}")).getNodes();
 		assertEquals(1, nodes.size());
 		IfStatement ifStmt = (IfStatement)nodes.get(0);
 		assertEquals(BooleanLiteral.class, ifStmt.getCondition().getClass());
@@ -410,7 +411,7 @@ public class ParserTest {
 		assertEquals(0, ifStmt.getElseIfs().size());
 		assertEquals(0, ifStmt.getFalseBlock().size());
 
-		nodes = new Parser().parse("{{ if true }} true body {{ else }} false body {{ end }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ if true }} true body {{ else }} false body {{ end }}")).getNodes();
 		assertEquals(1, nodes.size());
 		ifStmt = (IfStatement)nodes.get(0);
 		assertEquals(BooleanLiteral.class, ifStmt.getCondition().getClass());
@@ -420,7 +421,9 @@ public class ParserTest {
 		assertEquals(1, ifStmt.getFalseBlock().size());
 		assertEquals(Text.class, ifStmt.getFalseBlock().get(0).getClass());
 
-		nodes = new Parser().parse("{{ if true }} true {{ if false }} innerTrue {{ else }} innerFalse {{end }} body {{ else }} false body {{ end }}").getNodes();
+		nodes = new Parser()
+			.parse(new Source("test", "{{ if true }} true {{ if false }} innerTrue {{ else }} innerFalse {{end }} body {{ else }} false body {{ end }}"))
+			.getNodes();
 		assertEquals(1, nodes.size());
 		ifStmt = (IfStatement)nodes.get(0);
 		assertEquals(BooleanLiteral.class, ifStmt.getCondition().getClass());
@@ -436,7 +439,7 @@ public class ParserTest {
 		assertEquals(1, ifStmt.getFalseBlock().size());
 		assertEquals(Text.class, ifStmt.getFalseBlock().get(0).getClass());
 
-		nodes = new Parser().parse("{{ if true }} one {{ elseif false }} two {{ elseif false }} three {{ else }} four {{ end }}").getNodes();
+		nodes = new Parser().parse(new Source("test", "{{ if true }} one {{ elseif false }} two {{ elseif false }} three {{ else }} four {{ end }}")).getNodes();
 		assertEquals(1, nodes.size());
 		ifStmt = (IfStatement)nodes.get(0);
 		assertEquals(2, ifStmt.getElseIfs().size());
@@ -450,7 +453,7 @@ public class ParserTest {
 
 	@Test
 	public void testForStatement () {
-		List<Node> nodes = new Parser().parse("{{ for x in y }} true body {{expr}} {{ end }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ for x in y }} true body {{expr}} {{ end }}")).getNodes();
 		assertEquals(1, nodes.size());
 		ForStatement forStmt = (ForStatement)nodes.get(0);
 		assertNull(forStmt.getIndexOrKeyName());
@@ -464,7 +467,7 @@ public class ParserTest {
 
 	@Test
 	public void testWhileStatement () {
-		List<Node> nodes = new Parser().parse("{{ while true }} true body {{expr}} {{ end }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ while true }} true body {{expr}} {{ end }}")).getNodes();
 		assertEquals(1, nodes.size());
 		WhileStatement whileStmt = (WhileStatement)nodes.get(0);
 		assertEquals(BooleanLiteral.class, whileStmt.getCondition().getClass());
@@ -476,7 +479,7 @@ public class ParserTest {
 
 	@Test
 	public void testMacro () {
-		ParserResult template = new Parser().parse("{{ macro myMacro(a, b, c) }} true body {{expr}} {{ end }}");
+		ParserResult template = new Parser().parse(new Source("test", "{{ macro myMacro(a, b, c) }} true body {{expr}} {{ end }}"));
 		List<Node> nodes = template.getNodes();
 		Macros macros = template.getMacros();
 
@@ -505,7 +508,7 @@ public class ParserTest {
 		assertEquals(Text.class, macro.getBody().get(2).getClass());
 
 		try {
-			new Parser().parse("{{if true}} {{ macro myMacro() }} test {{end}} {{end}}");
+			new Parser().parse(new Source("test", "{{if true}} {{ macro myMacro() }} test {{end}} {{end}}"));
 			assertTrue("Macros are only allowed at the top level.", false);
 		} catch (Throwable t) {
 			// expected state
@@ -514,7 +517,7 @@ public class ParserTest {
 
 	@Test
 	public void testInclude () {
-		List<Node> nodes = new Parser().parse("{{ include \"othertemplate.html\" with ( key1: 1 * 2 + 3, key2: \"test\" ) }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ include \"othertemplate.html\" with ( key1: 1 * 2 + 3, key2: \"test\" ) }}")).getNodes();
 		assertEquals(1, nodes.size());
 
 		Include inc = (Include)nodes.get(0);
@@ -538,7 +541,7 @@ public class ParserTest {
 
 	@Test
 	public void testIncludeMacros () {
-		List<Node> nodes = new Parser().parse("{{ include \"othertemplate.html\" as math }}").getNodes();
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ include \"othertemplate.html\" as math }}")).getNodes();
 		assertEquals(1, nodes.size());
 
 		Include inc = (Include)nodes.get(0);
@@ -551,7 +554,7 @@ public class ParserTest {
 	@Test
 	public void testErrorMessage () {
 		try {
-			new Parser().parse("\n\n\n{{   if (()  }}");
+			new Parser().parse(new Source("test", "\n\n\n{{   if (()  }}"));
 		} catch (RuntimeException e) {
 			System.out.println(e);
 		}

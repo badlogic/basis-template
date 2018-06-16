@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
 import io.marioslab.basis.template.parsing.Ast.ByteLiteral;
@@ -36,7 +37,7 @@ import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 
 public class Parser {
 
-	public ParserResult parse (String source) {
+	public ParserResult parse (Source source) {
 		List<Node> nodes = new ArrayList<Node>();
 		Macros macros = new Macros();
 		List<Include> includes = new ArrayList<Include>();
@@ -348,6 +349,7 @@ public class Parser {
 		return arguments;
 	}
 
+	@SuppressWarnings("serial")
 	public static class Macros extends HashMap<String, Macro> {
 	}
 

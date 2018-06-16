@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template;
+package io.marioslab.basis.template.interpreter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -37,6 +37,9 @@ import io.marioslab.basis.template.parsing.Ast.UnaryOperation.UnaryOperator;
 import io.marioslab.basis.template.parsing.Ast.VariableAccess;
 import io.marioslab.basis.template.parsing.Ast.WhileStatement;
 import io.marioslab.basis.template.parsing.Parser.Macros;
+import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.Template;
+import io.marioslab.basis.template.TemplateContext;
 import io.marioslab.basis.template.parsing.Span;
 
 public class AstInterpreter {
@@ -58,13 +61,15 @@ public class AstInterpreter {
 		}
 	}
 
-	private static Object interpretVariableAccess(VariableAccess varAccess, Template template, TemplateContext context, OutputStream out) {
+	private static Object interpretVariableAccess (VariableAccess varAccess, Template template, TemplateContext context, OutputStream out) {
 		Object value = context.get(varAccess.getVariableName().getText());
 		if (value == null) Error.error("Couldn't find variable '" + varAccess.getVariableName().getText() + "' in context.", varAccess.getSpan());
 		return value;
 	}
 
-	private static Object interpretMapOrArrayAccess(MapOrArrayAccess mapAccess, Template template, TemplateContext context, OutputStream out) throws IOException {
+	@SuppressWarnings("rawtypes")
+	private static Object interpretMapOrArrayAccess (MapOrArrayAccess mapAccess, Template template, TemplateContext context, OutputStream out)
+		throws IOException {
 		Object mapOrArray = interpretNode(mapAccess.getMapOrArray(), template, context, out);
 		if (mapOrArray == null) Error.error("Couldn't find map or array in context.", mapAccess.getSpan());
 		Object keyOrIndex = interpretNode(mapAccess.getKeyOrIndex(), template, context, out);
@@ -102,7 +107,7 @@ public class AstInterpreter {
 		}
 	}
 
-	private static Object interpretMemberAccess(MemberAccess memberAccess, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretMemberAccess (MemberAccess memberAccess, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object object = interpretNode(memberAccess.getObject(), template, context, out);
 		if (object == null) Error.error("Couldn't find object in context.", memberAccess.getSpan());
 		Object field = memberAccess.getCachedMember();
@@ -122,7 +127,7 @@ public class AstInterpreter {
 		return Reflection.getInstance().getFieldValue(object, field);
 	}
 
-	private static Object interpretMethodCall(MethodCall methodCall, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretMethodCall (MethodCall methodCall, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object object = interpretNode(methodCall.getObject(), template, context, out);
 		if (object == null) Error.error("Couldn't find object in context.", methodCall.getSpan());
 
@@ -181,7 +186,7 @@ public class AstInterpreter {
 		}
 	}
 
-	private static Object interpretFunctionCall(FunctionCall call, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretFunctionCall (FunctionCall call, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object[] argumentValues = call.getCachedArguments();
 		List<Expression> arguments = call.getArguments();
 		for (int i = 0, n = argumentValues.length; i < n; i++) {
@@ -239,7 +244,7 @@ public class AstInterpreter {
 		}
 	}
 
-	private static Object interpretUnaryOperation(UnaryOperation op, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretUnaryOperation (UnaryOperation op, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object operand = interpretNode(op.getOperand(), template, context, out);
 
 		if (op.getOperator() == UnaryOperator.Negate) {
@@ -267,11 +272,10 @@ public class AstInterpreter {
 		}
 	}
 
-	private static Object interpretBinaryOperation(BinaryOperation op, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretBinaryOperation (BinaryOperation op, Template template, TemplateContext context, OutputStream out) throws IOException {
 
 		if (op.getOperator() == BinaryOperator.Assignment) {
-			if (!(op.getLeftOperand() instanceof VariableAccess))
-				Error.error("Can only assign to top-level variables in context.", op.getLeftOperand().getSpan());
+			if (!(op.getLeftOperand() instanceof VariableAccess)) Error.error("Can only assign to top-level variables in context.", op.getLeftOperand().getSpan());
 			Object value = interpretNode(op.getRightOperand(), template, context, out);
 			context.set(((VariableAccess)op.getLeftOperand()).getVariableName().getText(), value);
 			return null;
@@ -492,14 +496,15 @@ public class AstInterpreter {
 
 	}
 
-	private static Object interpretTernaryOperation(TernaryOperation op, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretTernaryOperation (TernaryOperation op, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object condition = interpretNode(op.getCondition(), template, context, out);
 		if (!(condition instanceof Boolean)) Error.error("Condition of ternary operator must be a boolean, got " + condition + ".", op.getSpan());
 		return ((Boolean)condition) ? interpretNode(op.getTrueExpression(), template, context, out)
 			: interpretNode(op.getFalseExpression(), template, context, out);
 	}
 
-	private static Object interpretFor(ForStatement forStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
+	@SuppressWarnings("rawtypes")
+	private static Object interpretFor (ForStatement forStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object mapOrArray = interpretNode(forStatement.getMapOrArray(), template, context, out);
 		if (mapOrArray == null) Error.error("Expected a map or array, got null.", forStatement.getMapOrArray().getSpan());
 		String valueName = forStatement.getValueName().getText();
@@ -700,10 +705,9 @@ public class AstInterpreter {
 		return null;
 	}
 
-	private static Object interpretIf(IfStatement ifStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretIf (IfStatement ifStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Object condition = interpretNode(ifStatement.getCondition(), template, context, out);
-		if (!(condition instanceof Boolean))
-			Error.error("Expected a condition evaluating to a boolean, got " + condition, ifStatement.getCondition().getSpan());
+		if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, ifStatement.getCondition().getSpan());
 		if ((Boolean)condition) {
 			interpretNodeList(ifStatement.getTrueBlock(), template, context, out);
 			return null;
@@ -712,8 +716,7 @@ public class AstInterpreter {
 		if (ifStatement.getElseIfs().size() > 0) {
 			for (IfStatement elseIf : ifStatement.getElseIfs()) {
 				condition = interpretNode(elseIf.getCondition(), template, context, out);
-				if (!(condition instanceof Boolean))
-					Error.error("Expected a condition evaluating to a boolean, got " + condition, elseIf.getCondition().getSpan());
+				if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, elseIf.getCondition().getSpan());
 				if ((Boolean)condition) {
 					interpretNodeList(elseIf.getTrueBlock(), template, context, out);
 					return null;
@@ -725,7 +728,7 @@ public class AstInterpreter {
 		return null;
 	}
 
-	private static Object interpretWhile(WhileStatement whileStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretWhile (WhileStatement whileStatement, Template template, TemplateContext context, OutputStream out) throws IOException {
 		while (true) {
 			Object condition = interpretNode(whileStatement.getCondition(), template, context, out);
 			if (!(condition instanceof Boolean))
@@ -736,7 +739,7 @@ public class AstInterpreter {
 		return null;
 	}
 
-	private static Object interpretInclude(Include include, Template template, TemplateContext context, OutputStream out) throws IOException {
+	private static Object interpretInclude (Include include, Template template, TemplateContext context, OutputStream out) throws IOException {
 		Template other = include.getTemplate();
 
 		if (!include.isMacrosOnly()) {
@@ -757,7 +760,6 @@ public class AstInterpreter {
 		return null;
 	}
 
-	@SuppressWarnings("rawtypes")
 	private static Object interpretNode (Node node, Template template, TemplateContext context, OutputStream out) throws IOException {
 		if (node.getClass() == Text.class) {
 			out.write(((Text)node).getBytes());
