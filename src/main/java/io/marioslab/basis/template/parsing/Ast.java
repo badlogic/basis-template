@@ -1,9 +1,13 @@
 
 package io.marioslab.basis.template.parsing;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import io.marioslab.basis.template.Error;
 import io.marioslab.basis.template.Template;
@@ -11,6 +15,7 @@ import io.marioslab.basis.template.TemplateContext;
 import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.interpreter.AstInterpreter;
 import io.marioslab.basis.template.interpreter.Reflection;
+import io.marioslab.basis.template.parsing.Parser.Macros;
 
 /** Templates are parsed into an abstract syntax tree (AST) nodes by a Parser. This class contains all AST node types. */
 public abstract class Ast {
@@ -33,6 +38,8 @@ public abstract class Ast {
 		public String toString () {
 			return span.getText();
 		}
+
+		public abstract Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException;
 	}
 
 	/** A text node represents an "un-templated" span in the source that should be emitted verbatim. **/
@@ -51,6 +58,12 @@ public abstract class Ast {
 		/** Returns the UTF-8 representatino of this text node. **/
 		public byte[] getBytes () {
 			return bytes;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			out.write(getBytes());
+			return null;
 		}
 	}
 
@@ -92,6 +105,35 @@ public abstract class Ast {
 
 		public Expression getOperand () {
 			return operand;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object operand = getOperand().evaluate(template, context, out);
+
+			if (getOperator() == UnaryOperator.Negate) {
+				if (operand instanceof Integer)
+					return -(Integer)operand;
+				else if (operand instanceof Float)
+					return -(Float)operand;
+				else if (operand instanceof Double)
+					return -(Double)operand;
+				else if (operand instanceof Byte)
+					return -(Byte)operand;
+				else if (operand instanceof Short)
+					return -(Short)operand;
+				else if (operand instanceof Long)
+					return -(Long)operand;
+				else {
+					Error.error("Operand of operator '" + getOperator().name() + "' must be a number, got " + operand, getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == UnaryOperator.Not) {
+				if (!(operand instanceof Boolean)) Error.error("Operand of operator '" + getOperator().name() + "' must be a boolean", getSpan());
+				return !(Boolean)operand;
+			} else {
+				return operand;
+			}
 		}
 	}
 
@@ -145,6 +187,228 @@ public abstract class Ast {
 		public Expression getRightOperand () {
 			return rightOperand;
 		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			if (getOperator() == BinaryOperator.Assignment) {
+				if (!(getLeftOperand() instanceof VariableAccess)) Error.error("Can only assign to top-level variables in context.", getLeftOperand().getSpan());
+				Object value = getRightOperand().evaluate(template, context, out);
+				context.set(((VariableAccess)getLeftOperand()).getVariableName().getText(), value);
+				return null;
+			}
+
+			Object left = getLeftOperand().evaluate(template, context, out);
+			Object right = getOperator() == BinaryOperator.And || getOperator() == BinaryOperator.Or ? null : getRightOperand().evaluate(template, context, out);
+
+			if (getOperator() == BinaryOperator.Addition) {
+				if (!(left instanceof Number || left instanceof String))
+					Error.error("Left operand must be a number or String, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number || right instanceof String))
+					Error.error("Right operand must be a number or String, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof String || right instanceof String) {
+					return left.toString() + right.toString();
+				} else if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() + ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() + ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() + ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() + ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() + ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() + ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for addition operator must be numbers or strings, got " + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Subtraction) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() - ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() - ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() - ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() - ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() - ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() - ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for subtraction operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Multiplication) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() * ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() * ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() * ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() * ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() * ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() * ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for multiplication operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Division) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() / ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() / ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() / ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() / ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() / ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() / ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for division operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Modulo) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() % ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() % ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() % ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() % ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() % ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() % ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for modulo operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Less) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() < ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() < ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() < ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() < ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() < ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() < ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for less operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.LessEqual) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() <= ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() <= ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() <= ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() <= ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() <= ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() <= ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for less/equal operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Greater) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() > ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() > ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() > ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() > ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() > ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() > ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for greater operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.GreaterEqual) {
+				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
+
+				if (left instanceof Double || right instanceof Double) {
+					return ((Number)left).doubleValue() >= ((Number)right).doubleValue();
+				} else if (left instanceof Float || right instanceof Float) {
+					return ((Number)left).floatValue() >= ((Number)right).floatValue();
+				} else if (left instanceof Long || right instanceof Long) {
+					return ((Number)left).longValue() >= ((Number)right).longValue();
+				} else if (left instanceof Integer || right instanceof Integer) {
+					return ((Number)left).intValue() >= ((Number)right).intValue();
+				} else if (left instanceof Short || right instanceof Short) {
+					return ((Number)left).shortValue() >= ((Number)right).shortValue();
+				} else if (left instanceof Byte || right instanceof Byte) {
+					return ((Number)left).byteValue() >= ((Number)right).byteValue();
+				} else {
+					Error.error("Operands for greater/equal operator must be numbers" + left + ", " + right + ".", getSpan());
+					return null; // never reached
+				}
+			} else if (getOperator() == BinaryOperator.Equal) {
+				return left.equals(right);
+			} else if (getOperator() == BinaryOperator.NotEqual) {
+				return !left.equals(right);
+			} else if (getOperator() == BinaryOperator.And) {
+				if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
+				if (!(Boolean)left) return false;
+				right = getRightOperand().evaluate(template, context, out);
+				if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
+				return (Boolean)left && (Boolean)right;
+			} else if (getOperator() == BinaryOperator.Or) {
+				if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
+				if ((Boolean)left) return true;
+				right = getRightOperand().evaluate(template, context, out);
+				if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
+				return (Boolean)left || (Boolean)right;
+			} else if (getOperator() == BinaryOperator.Xor) {
+				if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
+				if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
+				return (Boolean)left ^ (Boolean)right;
+			} else {
+				Error.error("Binary operator " + getOperator().name() + " not implemented", getSpan());
+				return null;
+			}
+		}
 	}
 
 	/** A ternary operation is an abbreviated if/then/else operation, and equivalent to the the ternary operator in Java. **/
@@ -171,6 +435,13 @@ public abstract class Ast {
 		public Expression getFalseExpression () {
 			return falseExpression;
 		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object condition = getCondition().evaluate(template, context, out);
+			if (!(condition instanceof Boolean)) Error.error("Condition of ternary operator must be a boolean, got " + condition + ".", getSpan());
+			return ((Boolean)condition) ? getTrueExpression().evaluate(template, context, out) : getFalseExpression().evaluate(template, context, out);
+		}
 	}
 
 	/** A null literal, with the single value <code>null</code> **/
@@ -178,39 +449,54 @@ public abstract class Ast {
 		public NullLiteral (Span span) {
 			super(span);
 		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			return null;
+		}
 	}
 
 	/** A boolean literal, with the values <code>true</code> and <code>false</code> **/
 	public static class BooleanLiteral extends Expression {
-		private final boolean value;
+		private final Boolean value;
 
 		public BooleanLiteral (Span literal) {
 			super(literal);
 			this.value = Boolean.parseBoolean(literal.getText());
 		}
 
-		public boolean getValue () {
+		public Boolean getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A double precision floating point literal. Must be marked with the <code>d</code> suffix, e.g. "1.0d". **/
 	public static class DoubleLiteral extends Expression {
-		private final double value;
+		private final Double value;
 
 		public DoubleLiteral (Span literal) {
 			super(literal);
 			this.value = Double.parseDouble(literal.getText().substring(0, literal.getText().length() - 1));
 		}
 
-		public double getValue () {
+		public Double getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A single precision floating point literla. May be optionally marked with the <code>f</code> suffix, e.g. "1.0f". **/
 	public static class FloatLiteral extends Expression {
-		private final float value;
+		private final Float value;
 
 		public FloatLiteral (Span literal) {
 			super(literal);
@@ -219,70 +505,95 @@ public abstract class Ast {
 			this.value = Float.parseFloat(text);
 		}
 
-		public float getValue () {
+		public Float getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A byte literal. Must be marked with the <code>b</code> suffix, e.g. "123b". **/
 	public static class ByteLiteral extends Expression {
-		private final byte value;
+		private final Byte value;
 
 		public ByteLiteral (Span literal) {
 			super(literal);
 			this.value = Byte.parseByte(literal.getText().substring(0, literal.getText().length() - 1));
 		}
 
-		public byte getValue () {
+		public Byte getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A short literal. Must be marked with the <code>s</code> suffix, e.g. "123s". **/
 	public static class ShortLiteral extends Expression {
-		private final short value;
+		private final Short value;
 
 		public ShortLiteral (Span literal) {
 			super(literal);
 			this.value = Short.parseShort(literal.getText().substring(0, literal.getText().length() - 1));
 		}
 
-		public short getValue () {
+		public Short getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** An integer literal. **/
 	public static class IntegerLiteral extends Expression {
-		private final int value;
+		private final Integer value;
 
 		public IntegerLiteral (Span literal) {
 			super(literal);
 			this.value = Integer.parseInt(literal.getText());
 		}
 
-		public int getValue () {
+		public Integer getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A long integer literal. Must be marked with the <code>l</code> suffix, e.g. "123l". **/
 	public static class LongLiteral extends Expression {
-		private final long value;
+		private final Long value;
 
 		public LongLiteral (Span literal) {
 			super(literal);
 			this.value = Long.parseLong(literal.getText().substring(0, literal.getText().length() - 1));
 		}
 
-		public long getValue () {
+		public Long getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A character literal, enclosed in single quotes. Supports escape sequences \n, \r,\t, \' and \\. **/
 	public static class CharacterLiteral extends Expression {
-		private final char value;
+		private final Character value;
 
 		public CharacterLiteral (Span literal) {
 			super(literal);
@@ -308,24 +619,34 @@ public abstract class Ast {
 			}
 		}
 
-		public char getValue () {
+		public Character getValue () {
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return value;
 		}
 	}
 
 	/** A string literal, enclosed in double quotes. Does not support escape sequences. **/
 	public static class StringLiteral extends Expression {
-		private final String cachedValue;
+		private final String value;
 
 		public StringLiteral (Span literal) {
 			super(literal);
 			String text = getSpan().getText();
-			cachedValue = text.substring(1, text.length() - 1);
+			value = text.substring(1, text.length() - 1);
 		}
 
 		/** Returns the literal without quotes **/
 		public String getValue () {
-			return cachedValue;
+			return value;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			return value;
 		}
 	}
 
@@ -339,6 +660,13 @@ public abstract class Ast {
 
 		public Span getVariableName () {
 			return getSpan();
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object value = context.get(getSpan().getText());
+			if (value == null) Error.error("Couldn't find variable '" + getSpan().getText() + "' in context.", getSpan());
+			return value;
 		}
 	}
 
@@ -362,6 +690,45 @@ public abstract class Ast {
 		/** Returns an expression that is used as the key or index to fetch a map or array element. **/
 		public Expression getKeyOrIndex () {
 			return keyOrIndex;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object mapOrArray = getMapOrArray().evaluate(template, context, out);
+			if (mapOrArray == null) Error.error("Couldn't find map or array in context.", getSpan());
+			Object keyOrIndex = getKeyOrIndex().evaluate(template, context, out);
+			if (keyOrIndex == null) Error.error("Couldn't evaluate key or index.", getKeyOrIndex().getSpan());
+
+			if (mapOrArray instanceof Map) {
+				return ((Map)mapOrArray).get(keyOrIndex);
+			} else if (mapOrArray instanceof List) {
+				if (!(keyOrIndex instanceof Number)) {
+					Error.error("List index must be an integer, but was " + keyOrIndex.getClass().getSimpleName(), getKeyOrIndex().getSpan());
+				}
+				int index = ((Number)keyOrIndex).intValue();
+				return ((List)mapOrArray).get(index);
+			} else {
+				if (!(keyOrIndex instanceof Number)) {
+					Error.error("Array index must be an integer, but was " + keyOrIndex.getClass().getSimpleName(), getKeyOrIndex().getSpan());
+				}
+				int index = ((Number)keyOrIndex).intValue();
+				if (mapOrArray instanceof int[])
+					return ((int[])mapOrArray)[index];
+				else if (mapOrArray instanceof float[])
+					return ((float[])mapOrArray)[index];
+				else if (mapOrArray instanceof double[])
+					return ((double[])mapOrArray)[index];
+				else if (mapOrArray instanceof boolean[])
+					return ((boolean[])mapOrArray)[index];
+				else if (mapOrArray instanceof char[])
+					return ((char[])mapOrArray)[index];
+				else if (mapOrArray instanceof short[])
+					return ((short[])mapOrArray)[index];
+				else if (mapOrArray instanceof long[])
+					return ((long[])mapOrArray)[index];
+				else
+					return ((Object[])mapOrArray)[index];
+			}
 		}
 	}
 
@@ -400,6 +767,26 @@ public abstract class Ast {
 		 * lookup. **/
 		public void setCachedMember (Object cachedMember) {
 			this.cachedMember = cachedMember;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object object = getObject().evaluate(template, context, out);
+			if (object == null) Error.error("Couldn't find object in context.", getSpan());
+			Object field = getCachedMember();
+			if (field != null) {
+				try {
+					return Reflection.getInstance().getFieldValue(object, field);
+				} catch (Throwable t) {
+					// fall through
+				}
+			}
+
+			field = Reflection.getInstance().getField(object, getName().getText());
+			if (field == null)
+				Error.error("Couldn't find field '" + getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.", getSpan());
+			setCachedMember(field);
+			return Reflection.getInstance().getFieldValue(object, field);
 		}
 	}
 
@@ -445,6 +832,65 @@ public abstract class Ast {
 		 * garbage. **/
 		public Object[] getCachedArguments () {
 			return cachedArguments;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object[] argumentValues = getCachedArguments();
+			List<Expression> arguments = getArguments();
+			for (int i = 0, n = argumentValues.length; i < n; i++) {
+				Expression expr = arguments.get(i);
+				argumentValues[i] = expr.evaluate(template, context, out);
+			}
+
+			// This is a special case to handle template level macros. If a call to a macro is
+			// made, evaluating the function expression will result in an exception, as the
+			// function name can't be found in the context. Instead we need to manually check
+			// if the function expression is a VariableAccess and if so, if it can be found
+			// in the context.
+			Object function = null;
+			if (getFunction() instanceof VariableAccess) {
+				VariableAccess varAccess = (VariableAccess)getFunction();
+				function = context.get(varAccess.getVariableName().getText());
+			} else {
+				function = getFunction().evaluate(template, context, out);
+			}
+
+			if (function != null) {
+				Object method = getCachedFunction();
+				if (method != null) {
+					try {
+						return Reflection.getInstance().callMethod(function, method, argumentValues);
+					} catch (Throwable t) {
+						// fall through
+					}
+				}
+				method = Reflection.getInstance().getMethod(function, null, argumentValues);
+				if (method == null) Error.error("Couldn't find function.", getSpan());
+				setCachedFunction(method);
+				return Reflection.getInstance().callMethod(function, method, argumentValues);
+			} else {
+				// Check if this is a call to a macro defined in this template
+				if (getFunction() instanceof VariableAccess) {
+					String functionName = ((VariableAccess)getFunction()).getVariableName().getText();
+					Macros macros = template.getMacros();
+					Macro macro = macros.get(functionName);
+					if (macro != null) {
+						if (macro.getArgumentNames().size() != arguments.size())
+							Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
+						TemplateContext macroContext = macro.getMacroContext();
+						for (int i = 0; i < arguments.size(); i++) {
+							Object arg = argumentValues[i];
+							String name = macro.getArgumentNames().get(i).getText();
+							macroContext.set(name, arg);
+						}
+						AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+						return null;
+					}
+				}
+				Error.error("Couldn't find function.", getSpan());
+				return null; // never reached
+			}
 		}
 	}
 
@@ -495,6 +941,67 @@ public abstract class Ast {
 		public Object[] getCachedArguments () {
 			return cachedArguments;
 		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object object = getObject().evaluate(template, context, out);
+			if (object == null) Error.error("Couldn't find object in context.", getSpan());
+
+			Object[] argumentValues = getCachedArguments();
+			List<Expression> arguments = getArguments();
+			for (int i = 0, n = argumentValues.length; i < n; i++) {
+				Expression expr = arguments.get(i);
+				argumentValues[i] = expr.evaluate(template, context, out);
+			}
+
+			// if the object we call the method on is a Macros instance, lookup the macro by name
+			// and execute its node list
+			if (object instanceof Macros) {
+				Macros macros = (Macros)object;
+				Macro macro = macros.get(getMethod().getName().getText());
+				if (macro != null) {
+					if (macro.getArgumentNames().size() != arguments.size())
+						Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
+					TemplateContext macroContext = macro.getMacroContext();
+					for (int i = 0; i < arguments.size(); i++) {
+						Object arg = argumentValues[i];
+						String name = macro.getArgumentNames().get(i).getText();
+						macroContext.set(name, arg);
+					}
+					AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+					return null;
+				}
+			}
+
+			// Otherwise try to find a corresponding method or field pointing to a lambda.
+			Object method = getCachedMethod();
+			if (method != null) {
+				try {
+					return Reflection.getInstance().callMethod(object, method, argumentValues);
+				} catch (Throwable t) {
+					// fall through
+				}
+			}
+
+			method = Reflection.getInstance().getMethod(object, getMethod().getName().getText(), argumentValues);
+			if (method != null) {
+				// found the method on the object, call it
+				setCachedMethod(method);
+				return Reflection.getInstance().callMethod(object, method, argumentValues);
+			} else {
+				// didn't find the method on the object, try to find a field pointing to a lambda
+				Object field = Reflection.getInstance().getField(object, getMethod().getName().getText());
+				if (field == null)
+					Error.error("Couldn't find method '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
+						getSpan());
+				Object function = Reflection.getInstance().getFieldValue(object, field);
+				method = Reflection.getInstance().getMethod(function, null, argumentValues);
+				if (method == null) Error.error(
+					"Couldn't find function in field '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
+					getSpan());
+				return Reflection.getInstance().callMethod(function, method, argumentValues);
+			}
+		}
 	}
 
 	/** Represents an if statement of the form <code>if condition trueBlock elseif condition ... else falseBlock end</code>. Elseif
@@ -527,6 +1034,37 @@ public abstract class Ast {
 
 		public List<Node> getFalseBlock () {
 			return falseBlock;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object condition = getCondition().evaluate(template, context, out);
+			if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, getCondition().getSpan());
+			if ((Boolean)condition) {
+				context.push();
+				AstInterpreter.interpretNodeList(getTrueBlock(), template, context, out);
+				context.pop();
+				return null;
+			}
+
+			if (getElseIfs().size() > 0) {
+				for (IfStatement elseIf : getElseIfs()) {
+					condition = elseIf.getCondition().evaluate(template, context, out);
+					if (!(condition instanceof Boolean))
+						Error.error("Expected a condition evaluating to a boolean, got " + condition, elseIf.getCondition().getSpan());
+					if ((Boolean)condition) {
+						context.push();
+						AstInterpreter.interpretNodeList(elseIf.getTrueBlock(), template, context, out);
+						context.pop();
+						return null;
+					}
+				}
+			}
+
+			context.push();
+			AstInterpreter.interpretNodeList(getFalseBlock(), template, context, out);
+			context.pop();
+			return null;
 		}
 	}
 
@@ -563,6 +1101,242 @@ public abstract class Ast {
 		public List<Node> getBody () {
 			return body;
 		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Object mapOrArray = getMapOrArray().evaluate(template, context, out);
+			if (mapOrArray == null) Error.error("Expected a map or array, got null.", getMapOrArray().getSpan());
+			String valueName = getValueName().getText();
+
+			if (mapOrArray instanceof Map) {
+				Map map = (Map)mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (Object entry : map.entrySet()) {
+						Entry e = (Entry)entry;
+						context.set(keyName, e.getKey());
+						context.set(valueName, e.getValue());
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (Object value : map.values()) {
+						context.set(valueName, value);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof Iterable) {
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					Iterator iter = ((Iterable)mapOrArray).iterator();
+					int i = 0;
+					while (iter.hasNext()) {
+						context.set(keyName, i++);
+						context.set(valueName, iter.next());
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					Iterator iter = ((Iterable)mapOrArray).iterator();
+					context.push();
+					while (iter.hasNext()) {
+						context.set(valueName, iter.next());
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof Iterator) {
+				if (getIndexOrKeyName() != null) {
+					Error.error("Can not do indexed/keyed for loop on an iterator.", getMapOrArray().getSpan());
+				} else {
+					Iterator iter = (Iterator)mapOrArray;
+					context.push();
+					while (iter.hasNext()) {
+						context.set(valueName, iter.next());
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof int[]) {
+				int[] array = (int[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof float[]) {
+				float[] array = (float[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof double[]) {
+				double[] array = (double[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof boolean[]) {
+				boolean[] array = (boolean[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof char[]) {
+				char[] array = (char[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof short[]) {
+				short[] array = (short[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof byte[]) {
+				byte[] array = (byte[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof long[]) {
+				long[] array = (long[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else if (mapOrArray instanceof Object[]) {
+				Object[] array = (Object[])mapOrArray;
+				if (getIndexOrKeyName() != null) {
+					context.push();
+					String keyName = getIndexOrKeyName().getText();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(keyName, i);
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				} else {
+					context.push();
+					for (int i = 0, n = array.length; i < n; i++) {
+						context.set(valueName, array[i]);
+						AstInterpreter.interpretNodeList(getBody(), template, context, out);
+					}
+					context.pop();
+				}
+			} else {
+				Error.error("Expected a map, an array or an iterable, got " + mapOrArray, getMapOrArray().getSpan());
+			}
+			return null;
+		}
 	}
 
 	/** Represents a while statement of the form <code>while condition ... end</code>. **/
@@ -582,6 +1356,19 @@ public abstract class Ast {
 
 		public List<Node> getBody () {
 			return body;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			context.push();
+			while (true) {
+				Object condition = getCondition().evaluate(template, context, out);
+				if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, getCondition().getSpan());
+				if (!((Boolean)condition)) break;
+				AstInterpreter.interpretNodeList(getBody(), template, context, out);
+			}
+			context.pop();
+			return null;
 		}
 	}
 
@@ -624,6 +1411,11 @@ public abstract class Ast {
 		/** The template of the macro is set after the entire template has been parsed. See the Template constructor. **/
 		public Template getTemplate () {
 			return template;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			return null;
 		}
 	}
 
@@ -671,6 +1463,28 @@ public abstract class Ast {
 		/** Returns null if macrosOnly is false **/
 		public Span getAlias () {
 			return alias;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Template other = getTemplate();
+
+			if (!isMacrosOnly()) {
+				if (getContext().isEmpty()) {
+					AstInterpreter.interpretNodeList(other.getNodes(), other, context, out);
+				} else {
+					TemplateContext otherContext = new TemplateContext();
+					for (Span span : getContext().keySet()) {
+						String key = span.getText();
+						Object value = getContext().get(span).evaluate(template, context, out);
+						otherContext.set(key, value);
+					}
+					AstInterpreter.interpretNodeList(other.getNodes(), other, otherContext, out);
+				}
+			} else {
+				context.set(getAlias().getText(), getTemplate().getMacros());
+			}
+			return null;
 		}
 	}
 }
