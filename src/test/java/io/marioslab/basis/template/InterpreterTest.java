@@ -189,7 +189,7 @@ public class InterpreterTest {
 	public void testStaticMethodCall () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 
-		loader.set("hello", "{{Math.abs(123) \" \" Math.abs(1.23)}}");
+		loader.set("hello", "{{Math.abs(123) \" \" Math.abs(1.23f)}}");
 		Template template = loader.load("hello");
 		TemplateContext context = new TemplateContext();
 		context.set("Math", Math.class);

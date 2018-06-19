@@ -116,6 +116,7 @@ public class JavaReflection extends Reflection {
 	private static Method findMethod (Class cls, String name, Class[] parameterTypes) {
 		Method[] methods = cls.getDeclaredMethods();
 		Method foundMethod = null;
+		int foundScore = 0;
 		for (int i = 0, n = methods.length; i < n; i++) {
 			Method method = methods[i];
 
@@ -126,20 +127,35 @@ public class JavaReflection extends Reflection {
 			// Check if the types match.
 			Class[] otherTypes = method.getParameterTypes();
 			boolean match = true;
+			int score = 0;
 			for (int ii = 0, nn = parameterTypes.length; ii < nn; ii++) {
 				Class type = parameterTypes[ii];
 				Class otherType = otherTypes[ii];
 
 				if (!otherType.isAssignableFrom(type)) {
+					score++;
 					if (!isPrimitiveAssignableFrom(type, otherType)) {
+						score++;
 						if (!isCoercible(type, otherType)) {
 							match = false;
 							break;
+						} else {
+							score++;
 						}
 					}
 				}
 			}
-			if (match) foundMethod = method;
+			if (match) {
+				if (foundMethod == null) {
+					foundMethod = method;
+					foundScore = score;
+				} else {
+					if (score < foundScore) {
+						foundScore = score;
+						foundMethod = method;
+					}
+				}
+			}
 		}
 		return foundMethod;
 	}
