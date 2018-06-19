@@ -188,6 +188,201 @@ public abstract class Ast {
 			return rightOperand;
 		}
 
+		private Object evaluateAddition (Object left, Object right) {
+			if (left instanceof String || right instanceof String) return left.toString() + right.toString();
+			if (left instanceof Double || right instanceof Double) return ((Number)left).doubleValue() + ((Number)right).doubleValue();
+			if (left instanceof Float || right instanceof Float) return ((Number)left).floatValue() + ((Number)right).floatValue();
+			if (left instanceof Long || right instanceof Long) return ((Number)left).longValue() + ((Number)right).longValue();
+			if (left instanceof Integer || right instanceof Integer) return ((Number)left).intValue() + ((Number)right).intValue();
+			if (left instanceof Short || right instanceof Short) return ((Number)left).shortValue() + ((Number)right).shortValue();
+			if (left instanceof Byte || right instanceof Byte) return ((Number)left).byteValue() + ((Number)right).byteValue();
+
+			Error.error("Operands for addition operator must be numbers or strings, got " + left + ", " + right + ".", getSpan());
+			return null; // never reached
+		}
+
+		private Object evaluateSubtraction (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() - ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() - ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() - ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() - ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() - ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() - ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for subtraction operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private Object evaluateMultiplication (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() * ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() * ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() * ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() * ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() * ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() * ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for multiplication operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private Object evaluateDivision (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() / ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() / ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() / ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() / ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() / ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() / ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for division operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private Object evaluateModulo (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() % ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() % ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() % ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() % ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() % ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() % ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for modulo operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private boolean evaluateLess (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() < ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() < ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() < ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() < ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() < ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() < ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for less operator must be numbers" + left + ", " + right + ".", getSpan());
+				return false; // never reached
+			}
+		}
+
+		private Object evaluateLessEqual (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() <= ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() <= ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() <= ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() <= ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() <= ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() <= ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for less/equal operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private Object evaluateGreater (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() > ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() > ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() > ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() > ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() > ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() > ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for greater operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private Object evaluateGreaterEqual (Object left, Object right) {
+			if (left instanceof Double || right instanceof Double) {
+				return ((Number)left).doubleValue() >= ((Number)right).doubleValue();
+			} else if (left instanceof Float || right instanceof Float) {
+				return ((Number)left).floatValue() >= ((Number)right).floatValue();
+			} else if (left instanceof Long || right instanceof Long) {
+				return ((Number)left).longValue() >= ((Number)right).longValue();
+			} else if (left instanceof Integer || right instanceof Integer) {
+				return ((Number)left).intValue() >= ((Number)right).intValue();
+			} else if (left instanceof Short || right instanceof Short) {
+				return ((Number)left).shortValue() >= ((Number)right).shortValue();
+			} else if (left instanceof Byte || right instanceof Byte) {
+				return ((Number)left).byteValue() >= ((Number)right).byteValue();
+			} else {
+				Error.error("Operands for greater/equal operator must be numbers" + left + ", " + right + ".", getSpan());
+				return null; // never reached
+			}
+		}
+
+		private Object evaluateAnd (Object left, Template template, TemplateContext context, OutputStream out) throws IOException {
+			if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
+			if (!(Boolean)left) return false;
+			Object right = getRightOperand().evaluate(template, context, out);
+			if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
+			return (Boolean)left && (Boolean)right;
+		}
+
+		private Object evaluateOr (Object left, Template template, TemplateContext context, OutputStream out) throws IOException {
+			if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
+			if ((Boolean)left) return true;
+			Object right = getRightOperand().evaluate(template, context, out);
+			if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
+			return (Boolean)left || (Boolean)right;
+		}
+
+		private Object evaluateXor (Object left, Object right) {
+			if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
+			if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
+			return (Boolean)left ^ (Boolean)right;
+		}
+
+		private Object evaluateEqual (Object left, Object right) {
+			return left.equals(right);
+		}
+
+		private Object evaluateNotEqual (Object left, Object right) {
+			return !left.equals(right);
+		}
+
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			if (getOperator() == BinaryOperator.Assignment) {
@@ -200,211 +395,36 @@ public abstract class Ast {
 			Object left = getLeftOperand().evaluate(template, context, out);
 			Object right = getOperator() == BinaryOperator.And || getOperator() == BinaryOperator.Or ? null : getRightOperand().evaluate(template, context, out);
 
-			if (getOperator() == BinaryOperator.Addition) {
-				if (!(left instanceof Number || left instanceof String))
-					Error.error("Left operand must be a number or String, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number || right instanceof String))
-					Error.error("Right operand must be a number or String, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof String || right instanceof String) {
-					return left.toString() + right.toString();
-				} else if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() + ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() + ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() + ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() + ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() + ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() + ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for addition operator must be numbers or strings, got " + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Subtraction) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() - ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() - ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() - ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() - ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() - ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() - ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for subtraction operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Multiplication) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() * ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() * ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() * ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() * ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() * ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() * ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for multiplication operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Division) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() / ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() / ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() / ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() / ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() / ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() / ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for division operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Modulo) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() % ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() % ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() % ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() % ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() % ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() % ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for modulo operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Less) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() < ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() < ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() < ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() < ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() < ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() < ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for less operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.LessEqual) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() <= ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() <= ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() <= ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() <= ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() <= ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() <= ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for less/equal operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Greater) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() > ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() > ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() > ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() > ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() > ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() > ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for greater operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.GreaterEqual) {
-				if (!(left instanceof Number)) Error.error("Left operand must be a number, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Number)) Error.error("Right operand must be a number, got " + right + ".", getRightOperand().getSpan());
-
-				if (left instanceof Double || right instanceof Double) {
-					return ((Number)left).doubleValue() >= ((Number)right).doubleValue();
-				} else if (left instanceof Float || right instanceof Float) {
-					return ((Number)left).floatValue() >= ((Number)right).floatValue();
-				} else if (left instanceof Long || right instanceof Long) {
-					return ((Number)left).longValue() >= ((Number)right).longValue();
-				} else if (left instanceof Integer || right instanceof Integer) {
-					return ((Number)left).intValue() >= ((Number)right).intValue();
-				} else if (left instanceof Short || right instanceof Short) {
-					return ((Number)left).shortValue() >= ((Number)right).shortValue();
-				} else if (left instanceof Byte || right instanceof Byte) {
-					return ((Number)left).byteValue() >= ((Number)right).byteValue();
-				} else {
-					Error.error("Operands for greater/equal operator must be numbers" + left + ", " + right + ".", getSpan());
-					return null; // never reached
-				}
-			} else if (getOperator() == BinaryOperator.Equal) {
-				return left.equals(right);
-			} else if (getOperator() == BinaryOperator.NotEqual) {
-				return !left.equals(right);
-			} else if (getOperator() == BinaryOperator.And) {
-				if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
-				if (!(Boolean)left) return false;
-				right = getRightOperand().evaluate(template, context, out);
-				if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
-				return (Boolean)left && (Boolean)right;
-			} else if (getOperator() == BinaryOperator.Or) {
-				if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
-				if ((Boolean)left) return true;
-				right = getRightOperand().evaluate(template, context, out);
-				if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
-				return (Boolean)left || (Boolean)right;
-			} else if (getOperator() == BinaryOperator.Xor) {
-				if (!(left instanceof Boolean)) Error.error("Left operand must be a boolean, got " + left + ".", getLeftOperand().getSpan());
-				if (!(right instanceof Boolean)) Error.error("Right operand must be a boolean, got " + right + ".", getRightOperand().getSpan());
-				return (Boolean)left ^ (Boolean)right;
-			} else {
+			switch (getOperator()) {
+			case Addition:
+				return evaluateAddition(left, right);
+			case Subtraction:
+				return evaluateSubtraction(left, right);
+			case Multiplication:
+				return evaluateMultiplication(left, right);
+			case Division:
+				return evaluateDivision(left, right);
+			case Modulo:
+				return evaluateModulo(left, right);
+			case Less:
+				return evaluateLess(left, right);
+			case LessEqual:
+				return evaluateLessEqual(left, right);
+			case Greater:
+				return evaluateGreater(left, right);
+			case GreaterEqual:
+				return evaluateGreaterEqual(left, right);
+			case Equal:
+				return evaluateEqual(left, right);
+			case NotEqual:
+				return evaluateNotEqual(left, right);
+			case And:
+				return evaluateAnd(left, template, context, out);
+			case Or:
+				return evaluateOr(left, template, context, out);
+			case Xor:
+				return evaluateXor(left, right);
+			default:
 				Error.error("Binary operator " + getOperator().name() + " not implemented", getSpan());
 				return null;
 			}
