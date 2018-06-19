@@ -605,15 +605,26 @@ You can test performance with this fork of [template-benchmark](https://github.c
 
 The benchmark contains many commonly used JVM templating engines. If you don't see your templating engine of choice, send a PR.
 
-Here are the results:
+Here are the results on an idle [Hetzner EX40](https://www.hetzner.com/dedicated-rootserver/ex40?country=us), using JDK 10.0.1, OpenJDK 64-Bit Server VM, 10.0.1+10.
 
-![benchmark.jpg](./benchmark.jpg)
+```
+BasisTemplate.benchmark         thrpt   10  39906.867 ±  513.546  ops/s
+BasisTemplateGetters.benchmark  thrpt   10  36745.616 ± 1389.334  ops/s
+Freemarker.benchmark            thrpt   10  20429.272 ±  394.242  ops/s
+Handlebars.benchmark            thrpt   10  21507.412 ±  242.507  ops/s
+JMustache.benchmark             thrpt   10  14235.609 ±  105.795  ops/s
+JTwig.benchmark                 thrpt   10   4327.615 ±  322.175  ops/s
+JavaMustache.benchmark          thrpt   10  19954.687 ± 4233.619  ops/s
+Pebble.benchmark                thrpt   10  28430.695 ±  807.715  ops/s
+Rocker.benchmark                thrpt   10  70602.199 ±  768.252  ops/s
+Thymeleaf.benchmark             thrpt   10   1495.825 ±   34.195  ops/s
+Trimou.benchmark                thrpt   10  25983.174 ±  558.236  ops/s
+Velocity.benchmark              thrpt   10  23083.624 ±  139.350  ops/s
+```
 
-Basis-template comes in third behind Pebble and Rocker. Rocker compiles templates to Java source code. That's somewhat remarkable, as basis-template offers a similar kind of expressivity, while being interpreted and not requiring a separate compiliation step (or external dependencies).
+Basis-template comes in second behind Rocker. Rocker compiles templates to Java source code.
 
-The bigger standard deviation of basis-template in ops/s can be attributed to GC pressure due to the template engine heavily relying on boxing to perform its task. While some work has already been done to eliminate the GC pressure, there's still some room for improvement.
-
-Other templating engines do not fare as well as basis-template, with many of them also not supporting as many features. However, most of them have been in the wild for much longer, are battle tested and have more than one maintainer. Performance alone is not a reason to use a templating engine.
+Other templating engines do not fare as well as basis-template. However, most of them have been in the wild for much longer, are battle tested and have more than one maintainer. Performance alone is not a reason to use a templating engine.
 
 So, should use basis-template? If it fits your requirements, sure. But be warned that basis-template is a very young project, and there'll likely be dragons.
 
