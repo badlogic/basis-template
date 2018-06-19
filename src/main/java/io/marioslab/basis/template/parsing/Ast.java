@@ -796,11 +796,13 @@ public abstract class Ast {
 		private final Expression function;
 		private final List<Expression> arguments;
 		private Object cachedFunction;
+		private final ThreadLocal<Object[]> cachedArguments;
 
 		public FunctionCall (Span span, Expression function, List<Expression> arguments) {
 			super(span);
 			this.function = function;
 			this.arguments = arguments;
+			this.cachedArguments = new ThreadLocal<Object[]>();
 		}
 
 		/** Return the expression that must evaluate to a {@link FunctionalInterface} or a {@link Macro}. **/
@@ -826,62 +828,84 @@ public abstract class Ast {
 			this.cachedFunction = cachedFunction;
 		}
 
+		/** Returns a scratch buffer to store arguments in when calling the function in {@link AstInterpreter}. Avoids generating
+		 * garbage. **/
+		public Object[] getCachedArguments () {
+			Object[] args = cachedArguments.get();
+			if (args == null) {
+				args = new Object[arguments.size()];
+				cachedArguments.set(args);
+			}
+			return args;
+		}
+
+		/** Must be invoked when this node is done evaluating so we don't leak memory **/
+		public void clearCachedArguments () {
+			Object[] args = getCachedArguments();
+			for (int i = 0; i < args.length; i++)
+				args[i] = null;
+		}
+
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
-			Object[] argumentValues = new Object[getArguments().size()];
-			List<Expression> arguments = getArguments();
-			for (int i = 0, n = argumentValues.length; i < n; i++) {
-				Expression expr = arguments.get(i);
-				argumentValues[i] = expr.evaluate(template, context, out);
-			}
-
-			// This is a special case to handle template level macros. If a call to a macro is
-			// made, evaluating the function expression will result in an exception, as the
-			// function name can't be found in the context. Instead we need to manually check
-			// if the function expression is a VariableAccess and if so, if it can be found
-			// in the context.
-			Object function = null;
-			if (getFunction() instanceof VariableAccess) {
-				VariableAccess varAccess = (VariableAccess)getFunction();
-				function = context.get(varAccess.getVariableName().getText());
-			} else {
-				function = getFunction().evaluate(template, context, out);
-			}
-
-			if (function != null) {
-				Object method = getCachedFunction();
-				if (method != null) {
-					try {
-						return Reflection.getInstance().callMethod(function, method, argumentValues);
-					} catch (Throwable t) {
-						// fall through
-					}
+			try {
+				Object[] argumentValues = getCachedArguments();
+				List<Expression> arguments = getArguments();
+				for (int i = 0, n = argumentValues.length; i < n; i++) {
+					Expression expr = arguments.get(i);
+					argumentValues[i] = expr.evaluate(template, context, out);
 				}
-				method = Reflection.getInstance().getMethod(function, null, argumentValues);
-				if (method == null) Error.error("Couldn't find function.", getSpan());
-				setCachedFunction(method);
-				return Reflection.getInstance().callMethod(function, method, argumentValues);
-			} else {
-				// Check if this is a call to a macro defined in this template
+
+				// This is a special case to handle template level macros. If a call to a macro is
+				// made, evaluating the function expression will result in an exception, as the
+				// function name can't be found in the context. Instead we need to manually check
+				// if the function expression is a VariableAccess and if so, if it can be found
+				// in the context.
+				Object function = null;
 				if (getFunction() instanceof VariableAccess) {
-					String functionName = ((VariableAccess)getFunction()).getVariableName().getText();
-					Macros macros = template.getMacros();
-					Macro macro = macros.get(functionName);
-					if (macro != null) {
-						if (macro.getArgumentNames().size() != arguments.size())
-							Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
-						TemplateContext macroContext = macro.getMacroContext();
-						for (int i = 0; i < arguments.size(); i++) {
-							Object arg = argumentValues[i];
-							String name = macro.getArgumentNames().get(i).getText();
-							macroContext.set(name, arg);
-						}
-						AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
-						return null;
-					}
+					VariableAccess varAccess = (VariableAccess)getFunction();
+					function = context.get(varAccess.getVariableName().getText());
+				} else {
+					function = getFunction().evaluate(template, context, out);
 				}
-				Error.error("Couldn't find function.", getSpan());
-				return null; // never reached
+
+				if (function != null) {
+					Object method = getCachedFunction();
+					if (method != null) {
+						try {
+							return Reflection.getInstance().callMethod(function, method, argumentValues);
+						} catch (Throwable t) {
+							// fall through
+						}
+					}
+					method = Reflection.getInstance().getMethod(function, null, argumentValues);
+					if (method == null) Error.error("Couldn't find function.", getSpan());
+					setCachedFunction(method);
+					return Reflection.getInstance().callMethod(function, method, argumentValues);
+				} else {
+					// Check if this is a call to a macro defined in this template
+					if (getFunction() instanceof VariableAccess) {
+						String functionName = ((VariableAccess)getFunction()).getVariableName().getText();
+						Macros macros = template.getMacros();
+						Macro macro = macros.get(functionName);
+						if (macro != null) {
+							if (macro.getArgumentNames().size() != arguments.size())
+								Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
+							TemplateContext macroContext = macro.getMacroContext();
+							for (int i = 0; i < arguments.size(); i++) {
+								Object arg = argumentValues[i];
+								String name = macro.getArgumentNames().get(i).getText();
+								macroContext.set(name, arg);
+							}
+							AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+							return null;
+						}
+					}
+					Error.error("Couldn't find function.", getSpan());
+					return null; // never reached
+				}
+			} finally {
+				clearCachedArguments();
 			}
 		}
 	}
@@ -891,11 +915,13 @@ public abstract class Ast {
 		private final MemberAccess method;
 		private final List<Expression> arguments;
 		private Object cachedMethod;
+		private final ThreadLocal<Object[]> cachedArguments;
 
 		public MethodCall (Span span, MemberAccess method, List<Expression> arguments) {
 			super(span);
 			this.method = method;
 			this.arguments = arguments;
+			this.cachedArguments = new ThreadLocal<Object[]>();
 		}
 
 		/** Returns the object on which to call the method. **/
@@ -926,64 +952,86 @@ public abstract class Ast {
 			this.cachedMethod = cachedMethod;
 		}
 
+		/** Returns a scratch buffer to store arguments in when calling the function in {@link AstInterpreter}. Avoids generating
+		 * garbage. **/
+		public Object[] getCachedArguments () {
+			Object[] args = cachedArguments.get();
+			if (args == null) {
+				args = new Object[arguments.size()];
+				cachedArguments.set(args);
+			}
+			return args;
+		}
+
+		/** Must be invoked when this node is done evaluating so we don't leak memory **/
+		public void clearCachedArguments () {
+			Object[] args = getCachedArguments();
+			for (int i = 0; i < args.length; i++)
+				args[i] = null;
+		}
+
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
-			Object object = getObject().evaluate(template, context, out);
-			if (object == null) Error.error("Couldn't find object in context.", getSpan());
+			try {
+				Object object = getObject().evaluate(template, context, out);
+				if (object == null) Error.error("Couldn't find object in context.", getSpan());
 
-			Object[] argumentValues = new Object[getArguments().size()];
-			List<Expression> arguments = getArguments();
-			for (int i = 0, n = argumentValues.length; i < n; i++) {
-				Expression expr = arguments.get(i);
-				argumentValues[i] = expr.evaluate(template, context, out);
-			}
+				Object[] argumentValues = getCachedArguments();
+				List<Expression> arguments = getArguments();
+				for (int i = 0, n = argumentValues.length; i < n; i++) {
+					Expression expr = arguments.get(i);
+					argumentValues[i] = expr.evaluate(template, context, out);
+				}
 
-			// if the object we call the method on is a Macros instance, lookup the macro by name
-			// and execute its node list
-			if (object instanceof Macros) {
-				Macros macros = (Macros)object;
-				Macro macro = macros.get(getMethod().getName().getText());
-				if (macro != null) {
-					if (macro.getArgumentNames().size() != arguments.size())
-						Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
-					TemplateContext macroContext = macro.getMacroContext();
-					for (int i = 0; i < arguments.size(); i++) {
-						Object arg = argumentValues[i];
-						String name = macro.getArgumentNames().get(i).getText();
-						macroContext.set(name, arg);
+				// if the object we call the method on is a Macros instance, lookup the macro by name
+				// and execute its node list
+				if (object instanceof Macros) {
+					Macros macros = (Macros)object;
+					Macro macro = macros.get(getMethod().getName().getText());
+					if (macro != null) {
+						if (macro.getArgumentNames().size() != arguments.size())
+							Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
+						TemplateContext macroContext = macro.getMacroContext();
+						for (int i = 0; i < arguments.size(); i++) {
+							Object arg = argumentValues[i];
+							String name = macro.getArgumentNames().get(i).getText();
+							macroContext.set(name, arg);
+						}
+						AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+						return null;
 					}
-					AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
-					return null;
 				}
-			}
 
-			// Otherwise try to find a corresponding method or field pointing to a lambda.
-			Object method = getCachedMethod();
-			if (method != null) {
-				try {
+				// Otherwise try to find a corresponding method or field pointing to a lambda.
+				Object method = getCachedMethod();
+				if (method != null) {
+					try {
+						return Reflection.getInstance().callMethod(object, method, argumentValues);
+					} catch (Throwable t) {
+						// fall through
+					}
+				}
+
+				method = Reflection.getInstance().getMethod(object, getMethod().getName().getText(), argumentValues);
+				if (method != null) {
+					// found the method on the object, call it
+					setCachedMethod(method);
 					return Reflection.getInstance().callMethod(object, method, argumentValues);
-				} catch (Throwable t) {
-					// fall through
-				}
-			}
-
-			method = Reflection.getInstance().getMethod(object, getMethod().getName().getText(), argumentValues);
-			if (method != null) {
-				// found the method on the object, call it
-				setCachedMethod(method);
-				return Reflection.getInstance().callMethod(object, method, argumentValues);
-			} else {
-				// didn't find the method on the object, try to find a field pointing to a lambda
-				Object field = Reflection.getInstance().getField(object, getMethod().getName().getText());
-				if (field == null)
-					Error.error("Couldn't find method '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
+				} else {
+					// didn't find the method on the object, try to find a field pointing to a lambda
+					Object field = Reflection.getInstance().getField(object, getMethod().getName().getText());
+					if (field == null)
+						Error.error("Couldn't find method '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
+							getSpan());
+					Object function = Reflection.getInstance().getFieldValue(object, field);
+					method = Reflection.getInstance().getMethod(function, null, argumentValues);
+					if (method == null) Error.error(
+						"Couldn't find function in field '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
 						getSpan());
-				Object function = Reflection.getInstance().getFieldValue(object, field);
-				method = Reflection.getInstance().getMethod(function, null, argumentValues);
-				if (method == null) Error.error(
-					"Couldn't find function in field '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
-					getSpan());
-				return Reflection.getInstance().callMethod(function, method, argumentValues);
+					return Reflection.getInstance().callMethod(function, method, argumentValues);
+				}
+			} finally {
+				clearCachedArguments();
 			}
 		}
 	}
