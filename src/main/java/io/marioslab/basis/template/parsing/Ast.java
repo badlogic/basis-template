@@ -796,13 +796,11 @@ public abstract class Ast {
 		private final Expression function;
 		private final List<Expression> arguments;
 		private Object cachedFunction;
-		private final Object[] cachedArguments;
 
 		public FunctionCall (Span span, Expression function, List<Expression> arguments) {
 			super(span);
 			this.function = function;
 			this.arguments = arguments;
-			this.cachedArguments = new Object[arguments.size()];
 		}
 
 		/** Return the expression that must evaluate to a {@link FunctionalInterface} or a {@link Macro}. **/
@@ -828,15 +826,9 @@ public abstract class Ast {
 			this.cachedFunction = cachedFunction;
 		}
 
-		/** Returns a scratch buffer to store arguments in when calling the function in {@link AstInterpreter}. Avoids generating
-		 * garbage. **/
-		public Object[] getCachedArguments () {
-			return cachedArguments;
-		}
-
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
-			Object[] argumentValues = getCachedArguments();
+			Object[] argumentValues = new Object[getArguments().size()];
 			List<Expression> arguments = getArguments();
 			for (int i = 0, n = argumentValues.length; i < n; i++) {
 				Expression expr = arguments.get(i);
@@ -899,13 +891,11 @@ public abstract class Ast {
 		private final MemberAccess method;
 		private final List<Expression> arguments;
 		private Object cachedMethod;
-		private final Object[] cachedArguments;
 
 		public MethodCall (Span span, MemberAccess method, List<Expression> arguments) {
 			super(span);
 			this.method = method;
 			this.arguments = arguments;
-			this.cachedArguments = new Object[arguments.size()];
 		}
 
 		/** Returns the object on which to call the method. **/
@@ -936,18 +926,12 @@ public abstract class Ast {
 			this.cachedMethod = cachedMethod;
 		}
 
-		/** Returns a scratch buffer to store arguments in when calling the function in {@link AstInterpreter}. Avoids generating
-		 * garbage. **/
-		public Object[] getCachedArguments () {
-			return cachedArguments;
-		}
-
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			Object object = getObject().evaluate(template, context, out);
 			if (object == null) Error.error("Couldn't find object in context.", getSpan());
 
-			Object[] argumentValues = getCachedArguments();
+			Object[] argumentValues = new Object[getArguments().size()];
 			List<Expression> arguments = getArguments();
 			for (int i = 0, n = argumentValues.length; i < n; i++) {
 				Expression expr = arguments.get(i);
