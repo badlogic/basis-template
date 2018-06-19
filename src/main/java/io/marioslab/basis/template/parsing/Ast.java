@@ -1113,9 +1113,11 @@ public abstract class Ast {
 				}
 			}
 
-			context.push();
-			AstInterpreter.interpretNodeList(getFalseBlock(), template, context, out);
-			context.pop();
+			if (getFalseBlock().size() > 0) {
+				context.push();
+				AstInterpreter.interpretNodeList(getFalseBlock(), template, context, out);
+				context.pop();
+			}
 			return null;
 		}
 	}

@@ -20,11 +20,11 @@ import io.marioslab.basis.template.interpreter.AstInterpreter;
  * </p>
  */
 public class TemplateContext {
-	public final List<Map<String, Object>> scopes = new ArrayList<Map<String, Object>>();
+	private final List<Map<String, Object>> scopes = new ArrayList<Map<String, Object>>();
 
 	/** Keeps track of previously allocated, unused scopes. New scopes are first tried to be retrieved from this pool to avoid
 	 * generating garbage. **/
-	public final List<Map<String, Object>> freeScopes = new ArrayList<Map<String, Object>>();
+	private final List<Map<String, Object>> freeScopes = new ArrayList<Map<String, Object>>();
 
 	public TemplateContext () {
 		push();
