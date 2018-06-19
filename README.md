@@ -576,6 +576,28 @@ A macro creates its own scope and does not inherit the scope of the template it 
 
 An include without a context inherits the scope of the including template. An include with a context does not inhert the including template's scope. An include that only imports macros does not have any scope.
 
+## Concurrency
+Basis-template `Template` and `TemplateLoader` instances are thread-safe. You can use them in multiple threads in parallel.
+
+`TemplateContext` is not thread safe. Always instantiate a new one and do not reuse old contexts unless you know what you are doing. E.g. sharing a single `TemplateContext` between multiple threads in a request handler of your web server is a bad idea. 1) your threads will concurrently write to the template context, overwriting each other and 2) when your poor template tries to render itself, it will get whatever is current in the context, including values from other threads.
+
+Always instantiate a new `TemplateContext` for rendering. If you are super adventurous, you can use a `ThreadLocal` to cache template context instances and reduce the pressure on the GC. In this case, make sure you clear out the context after a call to `Template.render()`, or whatever you put in the context will stay alive and will not be GCed, which might result in a big nasty memory leak.
+
+In short:
+
+```java
+// setup code, e.g. when starting up your server. Hold on to the template
+Template template = new ClasspathTemplateLoader().load("/path.bt");
+
+// Somewhere in your request handler:
+TemplateContext context = new TemplateContext();
+context.set("stuff", myStuff);
+template.render(context);
+```
+
+## i18n
+Basis-template does not come with i18n support out of the box. Given basis-template's expressiveness, you can pick whatever flavor of i18n framework you like and stuff it into your templates via functions or methods on objects.
+
 ## Performance
 Basis-template compiles templates to an abstract syntax tree, which is then interpreted. While this sounds terribly slow, a lot of care was taken to ensure that basis-template is among the fastest JVM templating engines.
 
@@ -587,7 +609,7 @@ Here are the results:
 
 ![benchmark.jpg](./benchmark.jpg)
 
-Basis-template comes in third behind Pebble and Rocker. Both of these compile templates to Java source code. That's somewhat remarkable, as basis-template offers a similar kind of expressivity, while being interpreted and not requiring a separate compiliation step (or external dependencies).
+Basis-template comes in third behind Pebble and Rocker. Rocker compiles templates to Java source code. That's somewhat remarkable, as basis-template offers a similar kind of expressivity, while being interpreted and not requiring a separate compiliation step (or external dependencies).
 
 The bigger standard deviation of basis-template in ops/s can be attributed to GC pressure due to the template engine heavily relying on boxing to perform its task. While some work has already been done to eliminate the GC pressure, there's still some room for improvement.
 
