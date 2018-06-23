@@ -52,7 +52,8 @@ public class Error {
 		int errorStart = location.getStart() - line.getStart();
 		int errorEnd = errorStart + location.getText().length() - 1;
 		for (int i = 0, n = line.getText().length(); i < n; i++) {
-			message += i >= errorStart && i <= errorEnd ? "^" : " ";
+			boolean useTab = line.getText().charAt(i) == '\t';
+			message += i >= errorStart && i <= errorEnd ? "^" : useTab ? "\t" : " ";
 		}
 
 		throw new RuntimeException(message);
