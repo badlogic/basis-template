@@ -28,7 +28,7 @@ public class AstInterpreter {
 		try {
 			interpretNodeList(template.getNodes(), template, context, out);
 		} catch (Throwable t) {
-			throw new RuntimeException(t);
+			throw new RuntimeException(t.getMessage(), t);
 		}
 	}
 
