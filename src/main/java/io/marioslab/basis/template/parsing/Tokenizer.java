@@ -99,7 +99,9 @@ public class Tokenizer {
 				boolean matchedEndQuote = false;
 				while (stream.hasMore()) {
 					// Note: escape sequences like \n are parsed in StringLiteral
-					if (stream.match("\\\"", true)) continue;
+					if (stream.match("\\", true)) {
+						stream.consume();
+					}
 					if (stream.match(TokenType.DoubleQuote.getLiteral(), true)) {
 						matchedEndQuote = true;
 						break;

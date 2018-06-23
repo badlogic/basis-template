@@ -6,8 +6,10 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 
 import org.junit.Test;
@@ -49,10 +51,12 @@ public class InterpreterTest {
 	public void testLiterals () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		loader.set("hello",
-			"Hello {{null}}, {{true}}, {{1234}}, {{12.34}}, {{123b}}, {{123s}}, {{123l}}, {{123f}}, {{123d}}, {{123.0d}}, {{'a'}}, {{'\\n'}}, {{\"world\"}}");
+			"Hello {{null}}, {{true}}, {{1234}}, {{12.34}}, {{123b}}, {{123s}}, {{123l}}, {{123f}}, {{123d}}, {{123.0d}}, {{'a'}}, {{'\\n'}}, {{\"world\"}}, {{\"\\\"\\n\\r\\t\\\\\"}}");
+
 		Template template = loader.load("hello");
 		String result = template.render(new TemplateContext());
-		assertEquals("Hello , true, 1234, 12.34, 123, 123, 123, 123.0, 123.0, 123.0, a, \n, world", result);
+
+		assertEquals("Hello , true, 1234, 12.34, 123, 123, 123, 123.0, 123.0, 123.0, a, \n, world, \"\n\r\t\\", result);
 	}
 
 	@Test
@@ -782,6 +786,27 @@ public class InterpreterTest {
 		context.set("array", new int[] {0, 1, 2, 3, 4});
 		result = template.render(context);
 		assertEquals("0\n1\n", result);
+
+		loader.set("hello", "{{ for j in range(0, 2) i = 0 while i < array.length if array[i] == 2 break else array[i] i = i + 1 end \"\n\" end}}{{end}}");
+		template = loader.load("hello");
+		context.set("array", new int[] {0, 1, 2, 3, 4});
+		context.set("range", (BiFunction<Integer, Integer, Iterator<Integer>>) (from, to) -> {
+			return new Iterator<Integer>() {
+				int idx = from;
+
+				@Override
+				public boolean hasNext () {
+					return idx <= to;
+				}
+
+				@Override
+				public Integer next () {
+					return idx++;
+				}
+			};
+		});
+		result = template.render(context);
+		assertEquals("0\n1\n0\n1\n0\n1\n", result);
 	}
 
 	@Test

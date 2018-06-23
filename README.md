@@ -139,6 +139,8 @@ Some templating language constructs, like `for` above, consist of multiple inter
 
 When a code span is the only non-whitespace character sequence in a line, and the code span does not emit a value, the entire line will be omitted from the output. Otherwise, the code span is either replaced with the emitted value, or entirely removed from its containing line if it does not emit a value, starting at `{{` and ending (inclusively) in `}}`.
 
+If you need `{{` or `}}` in your text spans, simply escape them with `\{` and `\}`. It's sufficient to only escape the first curly.
+
 Let's have a look at what we can put inside code spans.
 
 ## Literals

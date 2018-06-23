@@ -66,6 +66,11 @@ public class ParserTest {
 	}
 
 	@Test
+	public void testEscapedCurly () {
+		assertEquals("{{ }}", new String(((Text)new Parser().parse(new Source("test", "\\{\\{ \\}\\}")).getNodes().get(0)).getBytes()));
+	}
+
+	@Test
 	public void testBooleanLiteralNode () {
 		ParserResult template = new Parser().parse(new Source("test", "{{true}}"));
 		assertEquals("Expected 1 node", 1, template.getNodes().size());

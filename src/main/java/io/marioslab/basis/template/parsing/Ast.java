@@ -51,7 +51,19 @@ public abstract class Ast {
 		public Text (Span text) {
 			super(text);
 			try {
-				bytes = text.getText().getBytes("UTF-8");
+				String unescapedValue = text.getText();
+				StringBuilder builder = new StringBuilder();
+
+				CharacterStream stream = new CharacterStream(new Source(text.getSource().getPath(), unescapedValue));
+				while (stream.hasMore()) {
+					if (stream.match("\\{", true))
+						builder.append('{');
+					else if (stream.match("\\}", true))
+						builder.append('}');
+					else
+						builder.append(stream.consume());
+				}
+				bytes = builder.toString().getBytes("UTF-8");
 			} catch (UnsupportedEncodingException e) {
 				throw new RuntimeException("Couldn't convert text to UTF-8 string.", e);
 			}
@@ -651,14 +663,32 @@ public abstract class Ast {
 		}
 	}
 
-	/** A string literal, enclosed in double quotes. Does not support escape sequences. **/
+	/** A string literal, enclosed in double quotes. Supports escape sequences \n, \r, \t, \" and \\. **/
 	public static class StringLiteral extends Expression {
 		private final String value;
 
 		public StringLiteral (Span literal) {
 			super(literal);
 			String text = getSpan().getText();
-			value = text.substring(1, text.length() - 1);
+			String unescapedValue = text.substring(1, text.length() - 1);
+			StringBuilder builder = new StringBuilder();
+
+			CharacterStream stream = new CharacterStream(new Source(literal.getSource().getPath(), unescapedValue));
+			while (stream.hasMore()) {
+				if (stream.match("\\\\", true))
+					builder.append('\\');
+				else if (stream.match("\\n", true))
+					builder.append('\n');
+				else if (stream.match("\\r", true))
+					builder.append('\r');
+				else if (stream.match("\\t", true))
+					builder.append('\t');
+				else if (stream.match("\\\"", true))
+					builder.append('"');
+				else
+					builder.append(stream.consume());
+			}
+			value = builder.toString();
 		}
 
 		/** Returns the literal without quotes **/
