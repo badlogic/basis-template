@@ -11,8 +11,10 @@ import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.parsing.Ast.BinaryOperation;
 import io.marioslab.basis.template.parsing.Ast.BooleanLiteral;
+import io.marioslab.basis.template.parsing.Ast.Break;
 import io.marioslab.basis.template.parsing.Ast.ByteLiteral;
 import io.marioslab.basis.template.parsing.Ast.CharacterLiteral;
+import io.marioslab.basis.template.parsing.Ast.Continue;
 import io.marioslab.basis.template.parsing.Ast.DoubleLiteral;
 import io.marioslab.basis.template.parsing.Ast.Expression;
 import io.marioslab.basis.template.parsing.Ast.FloatLiteral;
@@ -66,6 +68,10 @@ public class Parser {
 			result = parseForStatement(tokens, includes);
 		else if (tokens.match("while", false))
 			result = parseWhileStatement(tokens, includes);
+		else if (tokens.match("continue", false))
+			result = new Continue(tokens.consume().getSpan());
+		else if (tokens.match("break", false))
+			result = new Break(tokens.consume().getSpan());
 		else if (tokens.match("macro", false)) {
 			if (!allowMacros) {
 				Error.error("Macros can only be defined at the top level of a template.", tokens.consume().getSpan());

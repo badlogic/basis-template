@@ -535,6 +535,9 @@ While statements work as expected:
 2
 ```
 
+### Continue and break
+You can use the familiar `continue` and `break` statements within all the above loop constructs. The statements will act on the innermost loop they are issued from.
+
 ## Includes
 You can include another template in your template like this:
 

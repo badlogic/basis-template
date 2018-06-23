@@ -749,6 +749,42 @@ public class InterpreterTest {
 	}
 
 	@Test
+	public void testContinue () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{ for num in array if num == 2 continue else num end}}\n{{end}}");
+		Template template = loader.load("hello");
+		context.set("array", new int[] {0, 1, 2, 3, 4});
+		String result = template.render(context);
+		assertEquals("0\n1\n3\n4\n", result);
+
+		loader.set("hello", "{{ i = 0 while i < array.length if array[i] == 2 i = i + 1 continue else array[i] i = i + 1 end}}\n{{end}}");
+		template = loader.load("hello");
+		context.set("array", new int[] {0, 1, 2, 3, 4});
+		result = template.render(context);
+		assertEquals("0\n1\n3\n4\n", result);
+	}
+
+	@Test
+	public void testBreak () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{ for num in array if num == 2 break else num end}}\n{{end}}");
+		Template template = loader.load("hello");
+		context.set("array", new int[] {0, 1, 2, 3, 4});
+		String result = template.render(context);
+		assertEquals("0\n1\n", result);
+
+		loader.set("hello", "{{ i = 0 while i < array.length if array[i] == 2 break else array[i] i = i + 1 end}}\n{{end}}");
+		template = loader.load("hello");
+		context.set("array", new int[] {0, 1, 2, 3, 4});
+		result = template.render(context);
+		assertEquals("0\n1\n", result);
+	}
+
+	@Test
 	public void testInclude () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		TemplateContext context = new TemplateContext();

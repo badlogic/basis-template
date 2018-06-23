@@ -30,8 +30,24 @@ public class TemplateContext {
 		push();
 	}
 
-	/** Sets the value of the variable with the given name. */
+	/** Sets the value of the variable with the given name. If the variable already exists in one of the scopes, that variable is
+	 * set. Otherwise the variable is set on the last pushed scope. */
 	public TemplateContext set (String name, Object value) {
+		for (int i = scopes.size() - 1; i >= 0; i--) {
+			Map<String, Object> ctx = scopes.get(i);
+			if (ctx.isEmpty()) continue;
+			if (ctx.containsKey(name)) {
+				ctx.put(name, value);
+				return this;
+			}
+		}
+
+		scopes.get(scopes.size() - 1).put(name, value);
+		return this;
+	}
+
+	/** Sets the value of the variable with the given name on the last pushed scope **/
+	public TemplateContext setOnCurrentScope (String name, Object value) {
 		scopes.get(scopes.size() - 1).put(name, value);
 		return this;
 	}
@@ -41,6 +57,7 @@ public class TemplateContext {
 	public Object get (String name) {
 		for (int i = scopes.size() - 1; i >= 0; i--) {
 			Map<String, Object> ctx = scopes.get(i);
+			if (ctx.isEmpty()) continue;
 			Object value = ctx.get(name);
 			if (value != null) return value;
 		}

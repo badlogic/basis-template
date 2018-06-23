@@ -8,6 +8,8 @@ import java.util.List;
 import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.TemplateContext;
 import io.marioslab.basis.template.parsing.Ast;
+import io.marioslab.basis.template.parsing.Ast.Break;
+import io.marioslab.basis.template.parsing.Ast.Continue;
 import io.marioslab.basis.template.parsing.Ast.Node;
 
 /**
@@ -32,13 +34,17 @@ public class AstInterpreter {
 		}
 	}
 
-	public static void interpretNodeList (List<Node> nodes, Template template, TemplateContext context, OutputStream out) throws IOException {
+	public static Object interpretNodeList (List<Node> nodes, Template template, TemplateContext context, OutputStream out) throws IOException {
 		for (int i = 0, n = nodes.size(); i < n; i++) {
 			Node node = nodes.get(i);
 			Object value = node.evaluate(template, context, out);
 			if (value != null) {
-				out.write(value.toString().getBytes("UTF-8"));
+				if (value == Break.BREAK_SENTINEL || value == Continue.CONTINUE_SENTINEL)
+					return value;
+				else
+					out.write(value.toString().getBytes("UTF-8"));
 			}
 		}
+		return null;
 	}
 }
