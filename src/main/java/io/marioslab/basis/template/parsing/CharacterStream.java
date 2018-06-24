@@ -19,7 +19,7 @@ public class CharacterStream {
 	public CharacterStream (Source source, int start, int end) {
 		if (start > end) throw new IllegalArgumentException("Start must be <= end.");
 		if (start < 0) throw new IndexOutOfBoundsException("Start must be >= 0.");
-		if (start > source.getContent().length() - 1) throw new IndexOutOfBoundsException("Start outside of string.");
+		if (start > Math.max(0, source.getContent().length() - 1)) throw new IndexOutOfBoundsException("Start outside of string.");
 		if (end > source.getContent().length()) throw new IndexOutOfBoundsException("End outside of string.");
 
 		this.source = source;
