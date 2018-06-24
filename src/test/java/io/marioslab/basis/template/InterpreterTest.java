@@ -828,6 +828,18 @@ public class InterpreterTest {
 	}
 
 	@Test
+	public void testRawInclude () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{i = 0; while (i < 3) include raw \"hello2\"; i = i + 1; end}}");
+		loader.set("hello2", "{{i}}");
+		Template template = loader.load("hello");
+		String result = template.render(context);
+		assertEquals("{{i}}{{i}}{{i}}", result);
+	}
+
+	@Test
 	public void testMacros () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		TemplateContext context = new TemplateContext();

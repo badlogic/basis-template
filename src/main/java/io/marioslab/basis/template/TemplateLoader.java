@@ -6,11 +6,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.marioslab.basis.template.parsing.Ast.Include;
+import io.marioslab.basis.template.parsing.Ast.IncludeRaw;
 import io.marioslab.basis.template.parsing.Parser;
 import io.marioslab.basis.template.parsing.Parser.ParserResult;
 
@@ -83,7 +85,10 @@ public interface TemplateLoader {
 				templates.put(path, template);
 				return template;
 			} catch (Throwable t) {
-				throw new RuntimeException("Couldn't load template '" + path + "'.", t);
+				if (t instanceof RuntimeException)
+					throw t;
+				else
+					throw new RuntimeException("Couldn't load template '" + path + "'.", t);
 			}
 		}
 
@@ -95,6 +100,16 @@ public interface TemplateLoader {
 				String includePath = include.getPath().getText();
 				Template template = load(includePath.substring(1, includePath.length() - 1));
 				include.setTemplate(template);
+			}
+
+			for (IncludeRaw rawInclude : result.getRawIncludes()) {
+				String includePath = rawInclude.getPath().getText();
+				Source content = loadSource(includePath.substring(1, includePath.length() - 1));
+				try {
+					rawInclude.setContent(content.content.getBytes("UTF-8"));
+				} catch (UnsupportedEncodingException e) {
+					throw new RuntimeException("Couldn't load raw include " + includePath, e);
+				}
 			}
 
 			return new Template(result.getNodes(), result.getMacros(), result.getIncludes());

@@ -1682,4 +1682,34 @@ public abstract class Ast {
 			return null;
 		}
 	}
+
+	/** Represents an include statement of the form <code>include raw "path"</code>, which includes the file verbatim. */
+	public static class IncludeRaw extends Node {
+		private final Span path;
+		private byte[] content;
+
+		public IncludeRaw (Span span, Span path) {
+			super(span);
+			this.path = path;
+			this.content = null;
+		}
+
+		public Span getPath () {
+			return path;
+		}
+
+		public void setContent (byte[] content) {
+			this.content = content;
+		}
+
+		public byte[] getContent () {
+			return content;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			out.write(content);
+			return null;
+		}
+	}
 }

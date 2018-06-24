@@ -557,7 +557,7 @@ If you want to avoid the included template having access to the including templa
 
 The included template will only have access to the variables `var1` and `anotherVar`.
 
-Finally, if you only want to include the macros of another template, you can do it like this:
+If you only want to include the macros of another template, you can do it like this:
 
 ```
 {{include "path/to/template.bt" as someName}}
@@ -565,6 +565,12 @@ Finally, if you only want to include the macros of another template, you can do 
 ```
 
 All macros contained in the included template can be accessed via the `someName` variable.
+
+Finally, if you want to include another file as it is, without being interpreted as a template, you can use a raw include:
+
+```
+{{include raw "path/to/file"}}
+```
 
 When the template engine encounters an include statement, it uses the same template loader that was used to load the including template.
 
