@@ -746,6 +746,7 @@ public abstract class Ast {
 			return keyOrIndex;
 		}
 
+		@SuppressWarnings("rawtypes")
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			Object mapOrArray = getMapOrArray().evaluate(template, context, out);
@@ -1227,6 +1228,7 @@ public abstract class Ast {
 			return body;
 		}
 
+		@SuppressWarnings("rawtypes")
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			Object mapOrArray = getMapOrArray().evaluate(template, context, out);

@@ -6,14 +6,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.marioslab.basis.template.Error.TemplateException;
 import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.IncludeRaw;
 import io.marioslab.basis.template.parsing.Parser;
@@ -94,10 +90,17 @@ public interface TemplateLoader {
 			ParserResult result = new Parser().parse(source);
 
 			// resolve includes and macros
+			String rootDir = source.getPath();
+			int lastSlashIndex = rootDir.lastIndexOf('/');
+			if (lastSlashIndex >= 0) {
+				rootDir = rootDir.substring(0, lastSlashIndex + 1);
+			} else {
+				rootDir = "";
+			}
 			for (Include include : result.getIncludes()) {
 				String includePath = include.getPath().getText();
 				try {
-					Template template = load(includePath.substring(1, includePath.length() - 1));
+					Template template = load(rootDir + includePath.substring(1, includePath.length() - 1));
 					include.setTemplate(template);
 				} catch (Throwable t) {
 					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.", include.getSpan(), t);
@@ -107,7 +110,7 @@ public interface TemplateLoader {
 			for (IncludeRaw rawInclude : result.getRawIncludes()) {
 				String includePath = rawInclude.getPath().getText();
 				try {
-					Source content = loadSource(includePath.substring(1, includePath.length() - 1));
+					Source content = loadSource(rootDir + includePath.substring(1, includePath.length() - 1));
 					rawInclude.setContent(content.content.getBytes("UTF-8"));
 				} catch (Throwable t) {
 					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.", rawInclude.getSpan(), t);
@@ -135,18 +138,16 @@ public interface TemplateLoader {
 
 	/** A TemplateLoader to load templates from a directory. **/
 	public static class FileTemplateLoader extends CachingTemplateLoader {
-		private final File baseDirectory;
 
 		/** Construct the loader with the base directory. All paths passed to {@link #load(String)} are assumed to be relative to
-		 * that directory. **/
-		public FileTemplateLoader (File baseDirectory) {
-			this.baseDirectory = baseDirectory;
+		 * the current working directory. **/
+		public FileTemplateLoader () {
 		}
 
 		@Override
 		protected Source loadSource (String path) {
 			try {
-				return new Source(path, StreamUtils.readString(new FileInputStream(new File(baseDirectory, path))));
+				return new Source(path, StreamUtils.readString(new FileInputStream(new File(path))));
 			} catch (Throwable t) {
 				Error.error("Couldn't load template '" + path + "'.", new Span(new Source(path, " "), 0, 0), t);
 				throw new RuntimeException(""); // never reached
