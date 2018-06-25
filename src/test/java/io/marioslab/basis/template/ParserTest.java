@@ -561,7 +561,10 @@ public class ParserTest {
 		try {
 			new Parser().parse(new Source("test", "\n\n\n{{   if (()  }}"));
 		} catch (RuntimeException e) {
-			System.out.println(e);
+			System.out.println(e.getMessage());
+			assertEquals(
+				"Error (test:3): Expected a variable, field, map, array, function or method call, or literal.\n" + "\n" + "{{   if (()  }}\n" + "          ^    ",
+				e.getMessage());
 		}
 	}
 

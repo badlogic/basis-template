@@ -88,6 +88,10 @@ public class Error {
 		public String getMessage () {
 			StringBuilder builder = new StringBuilder();
 
+			if (getCause() == null || getCause() == this) {
+				return super.getMessage();
+			}
+
 			builder.append(errorMessage.substring(0, errorMessage.indexOf('\n')));
 			builder.append("\n");
 
