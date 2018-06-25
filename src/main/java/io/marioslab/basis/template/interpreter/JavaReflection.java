@@ -80,7 +80,7 @@ public class JavaReflection extends Reflection {
 		if (method == null) {
 			try {
 				if (name == null) {
-					method = cls.getDeclaredMethods()[0];
+					method = findApply(cls);
 				} else {
 					method = findMethod(cls, name, parameterTypes);
 				}
@@ -95,7 +95,7 @@ public class JavaReflection extends Reflection {
 				while (parentClass != Object.class && parentClass != null) {
 					try {
 						if (name == null)
-							method = parentClass.getDeclaredMethods()[0];
+							method = findApply(parentClass);
 						else {
 							method = findMethod(parentClass, name, parameterTypes);
 						}
@@ -110,6 +110,14 @@ public class JavaReflection extends Reflection {
 		}
 
 		return method;
+	}
+
+	/** Returns the <code>apply()</code> method of a functional interface. **/
+	private static Method findApply (Class cls) {
+		for (Method method : cls.getDeclaredMethods()) {
+			if (method.getName().equals("apply")) return method;
+		}
+		return null;
 	}
 
 	/** Returns the method best matching the given signature, including type coercion, or null. **/

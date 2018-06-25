@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -390,11 +389,13 @@ public abstract class Ast {
 		}
 
 		private Object evaluateEqual (Object left, Object right) {
-			return left.equals(right);
+			if (left != null) return left.equals(right);
+			if (right != null) return right.equals(left);
+			return true;
 		}
 
 		private Object evaluateNotEqual (Object left, Object right) {
-			return !left.equals(right);
+			return !(Boolean)evaluateEqual(left, right);
 		}
 
 		@Override
