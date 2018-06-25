@@ -64,7 +64,8 @@ public abstract class Ast {
 				}
 				bytes = builder.toString().getBytes("UTF-8");
 			} catch (UnsupportedEncodingException e) {
-				throw new RuntimeException("Couldn't convert text to UTF-8 string.", e);
+				Error.error("Couldn't convert text to UTF-8 string.", text);
+				throw new RuntimeException(""); // never reached
 			}
 		}
 

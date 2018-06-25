@@ -57,10 +57,9 @@ public class Template {
 		try {
 			out.close();
 			return new String(out.toByteArray(), "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new RuntimeException(e);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			Error.error("Couldn't render template to string, " + e.getMessage(), nodes.get(0).getSpan());
+			return null; // never reached
 		}
 	}
 

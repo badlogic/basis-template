@@ -32,17 +32,9 @@ public class Error {
 		}
 	}
 
-	/**
-	 * <p>
-	 * Create an error message based on the provided message and location, highlighting the location in the line on which the error
-	 * happened.
-	 * </p>
-	 * *
-	 * <p>
-	 * Throws a {@link RuntimeException}
-	 * </p>
-	 **/
-	public static void error (String message, Span location) {
+	/** Create an error message based on the provided message and location, highlighting the location in the line on which the
+	 * error happened. Throws a {@link TemplateException} **/
+	public static void error (String message, Span location, Throwable cause) {
 
 		Line line = location.getLine();
 		message = "Error (" + location.getSource().getPath() + ":" + line.getLineNumber() + "): " + message + "\n\n";
@@ -56,6 +48,62 @@ public class Error {
 			message += i >= errorStart && i <= errorEnd ? "^" : useTab ? "\t" : " ";
 		}
 
-		throw new RuntimeException(message);
+		if (cause == null)
+			throw new TemplateException(message, location);
+		else
+			throw new TemplateException(message, location, cause);
+	}
+
+	/** Create an error message based on the provided message and location, highlighting the location in the line on which the
+	 * error happened. Throws a {@link TemplateException} **/
+	public static void error (String message, Span location) {
+		error(message, location, null);
+	}
+
+	/** Exception thrown by all basis-template code via {@link Error#error(String, Span)}. In case an error happens deep inside a
+	 * list of included templates, the {@link #getMessage()} method will return a condensed error message. **/
+	public static class TemplateException extends RuntimeException {
+		private static final long serialVersionUID = 1L;
+		private final Span location;
+		private final String errorMessage;
+
+		private TemplateException (String message, Span location) {
+			super(message);
+			this.errorMessage = message;
+			this.location = location;
+		}
+
+		public TemplateException (String message, Span location, Throwable cause) {
+			super(message, cause);
+			this.errorMessage = message;
+			this.location = location;
+		}
+
+		/** Returns the location in the template at which the error happened. **/
+		public Span getLocation () {
+			return location;
+		}
+
+		@Override
+		public String getMessage () {
+			StringBuilder builder = new StringBuilder();
+
+			builder.append(errorMessage.substring(0, errorMessage.indexOf('\n')));
+			builder.append("\n");
+
+			Throwable cause = getCause();
+			while (cause != null && cause != this) {
+				if (cause instanceof TemplateException) {
+					TemplateException ex = (TemplateException)cause;
+					if (ex.getCause() == null || ex.getCause() == ex)
+						builder.append(ex.errorMessage);
+					else
+						builder.append(ex.errorMessage.substring(0, ex.errorMessage.indexOf('\n')));
+					builder.append("\n");
+				}
+				cause = cause.getCause();
+			}
+			return builder.toString();
+		}
 	}
 }

@@ -7,14 +7,18 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.marioslab.basis.template.Error.TemplateException;
 import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.IncludeRaw;
 import io.marioslab.basis.template.parsing.Parser;
 import io.marioslab.basis.template.parsing.Parser.ParserResult;
+import io.marioslab.basis.template.parsing.Span;
 
 /** A template loader loads a {@link Template} from a path, and recursively loads other templates the template may reference. See
  * {@link CachingTemplateLoader}, {@link ClasspathTemplateLoader}, {@link FileTemplateLoader} and {@link MapTemplateLoader} for
@@ -79,36 +83,34 @@ public interface TemplateLoader {
 		@Override
 		public Template load (String path) {
 			if (templates.containsKey(path)) return templates.get(path);
-			try {
-				Source source = loadSource(path);
-				Template template = compileTemplate(source);
-				templates.put(path, template);
-				return template;
-			} catch (Throwable t) {
-				if (t instanceof RuntimeException)
-					throw t;
-				else
-					throw new RuntimeException("Couldn't load template '" + path + "'.", t);
-			}
+			Source source = loadSource(path);
+			Template template = compileTemplate(source);
+			templates.put(path, template);
+			return template;
 		}
 
 		protected Template compileTemplate (Source source) {
+			// Parse the template
 			ParserResult result = new Parser().parse(source);
 
 			// resolve includes and macros
 			for (Include include : result.getIncludes()) {
 				String includePath = include.getPath().getText();
-				Template template = load(includePath.substring(1, includePath.length() - 1));
-				include.setTemplate(template);
+				try {
+					Template template = load(includePath.substring(1, includePath.length() - 1));
+					include.setTemplate(template);
+				} catch (Throwable t) {
+					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.", include.getSpan(), t);
+				}
 			}
 
 			for (IncludeRaw rawInclude : result.getRawIncludes()) {
 				String includePath = rawInclude.getPath().getText();
-				Source content = loadSource(includePath.substring(1, includePath.length() - 1));
 				try {
+					Source content = loadSource(includePath.substring(1, includePath.length() - 1));
 					rawInclude.setContent(content.content.getBytes("UTF-8"));
-				} catch (UnsupportedEncodingException e) {
-					throw new RuntimeException("Couldn't load raw include " + includePath, e);
+				} catch (Throwable t) {
+					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.", rawInclude.getSpan(), t);
 				}
 			}
 
@@ -125,7 +127,8 @@ public interface TemplateLoader {
 			try {
 				return new Source(path, StreamUtils.readString(TemplateLoader.class.getResourceAsStream(path)));
 			} catch (Throwable t) {
-				throw new RuntimeException("Couldn't load template '" + path + "'.", t);
+				Error.error("Couldn't load template '" + path + "'.", new Span(new Source(path, " "), 0, 0), t);
+				throw new RuntimeException(""); // never reached
 			}
 		}
 	}
@@ -145,7 +148,8 @@ public interface TemplateLoader {
 			try {
 				return new Source(path, StreamUtils.readString(new FileInputStream(new File(baseDirectory, path))));
 			} catch (Throwable t) {
-				throw new RuntimeException("Couldn't load template '" + path + "'.", t);
+				Error.error("Couldn't load template '" + path + "'.", new Span(new Source(path, " "), 0, 0), t);
+				throw new RuntimeException(""); // never reached
 			}
 		}
 	}
@@ -165,7 +169,7 @@ public interface TemplateLoader {
 		@Override
 		protected Source loadSource (String path) {
 			Source template = templates.get(path);
-			if (template == null) throw new RuntimeException("Couldn't load template '" + path + "'.");
+			if (template == null) Error.error("Couldn't load template '" + path + "'.", new Span(new Source(path, " "), 0, 0));
 			return template;
 		}
 	}

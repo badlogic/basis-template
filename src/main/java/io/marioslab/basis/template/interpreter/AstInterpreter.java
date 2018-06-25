@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
+import io.marioslab.basis.template.Error.TemplateException;
 import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.TemplateContext;
 import io.marioslab.basis.template.parsing.Ast;
@@ -30,7 +31,10 @@ public class AstInterpreter {
 		try {
 			interpretNodeList(template.getNodes(), template, context, out);
 		} catch (Throwable t) {
-			throw new RuntimeException(t.getMessage(), t);
+			if (t instanceof TemplateException)
+				throw (TemplateException)t;
+			else
+				io.marioslab.basis.template.Error.error("Couldn't interpret node list due to I/O error, " + t.getMessage(), template.getNodes().get(0).getSpan());
 		}
 	}
 
