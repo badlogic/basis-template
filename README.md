@@ -171,7 +171,7 @@ A double {{123d}}.
 
 While in general you will not find a lot of need for using the suffixes, they can come in handy when calling functions and methods that require a specific type.
 
-> **Note**: the templating engine will perform widening type coercion when evaluating arithmethic operations, such as `{{1b + 2.3}}`. In this case, the `byte` operand will first be widened to a double, to match the `double` operand.
+> **Note**: the templating engine will perform widening type coercion when evaluating arithmetic operations, such as `{{1b + 2.3}}`. In this case, the `byte` operand will first be widened to a double, to match the `double` operand.
 
 The templating language also supports character and string literals:
 
@@ -181,7 +181,24 @@ The character {{'a'}} is included in the string {{"a-team"}}.
 
 Character and string literals may contain the common escape sequences `\n`, `\r`, `\t`. The characters `\`, `'` and `"` must also be escaped in character and string literals, e.g. `{{'\\'}} {{'\''}} {{"\""}}`.
 
-Finally, since basis-template is a JVM templating engine, we can not escape the million dollar escape of `null`, which looks like this in literal form: `{{null}}`. This may come in handy if you want to compare the return value of a method or function to `null`, or must pass a `null`.
+Since basis-template is a JVM templating engine, we can not escape the billion dollar mistake of `null`, which looks like this in literal form: `{{null}}`. This may come in handy if you want to compare the return value of a method or function to `null`, or must pass a `null`.
+
+Finally, basis-template supports map and array literals which look very similar to JSON:
+
+```
+{{
+    {
+        title: "Hello world"
+        date: "2018/07/23",
+        published: false,
+        tags: [ "rant", "JVM", "ponies" ]
+    }
+}}
+```
+
+As you an see, map and array literals can be arbitrarily nested. A map literal will return an instance of `Map<String, Object>`, a list literal will return an instance of type `List<Object>`. The keys you specify in a map literal follow the same rules as identifiers in Java. You can not specify arbitrary quote strings with whitespace as keys of a map literal!
+
+Map and array literals can be handy if you want to define metadata in your template to be reused in different parts of your template.
 
 ## Operators
 The templating language supports most of the Java operators. The precedence of these operators is also the same as in Java.
@@ -246,6 +263,24 @@ When the templating engine encounters a variable name in an expression, it looks
 When the variable value is evaluated, it takes on whatever type the corresponding Java object has. E.g. an `int` will be treated like an integer in expression, a `Map` like a map and so on. The template engine will also perform widening type coercions for arithmetic expressions and passing arguments to methods and functions in the same way Java does.
 
 The evaluation of primitive types is straight forward. However, the real power of basis-template comes from being able to access fields and call methods on objects.
+
+## Assignments
+The templating language allows a limited form of assignements. You can set the value of a context variable in your template. This can be useful when you want to store function or method return values, or some intermediate results of a calculation:
+
+```
+{{{a = 10}}}
+{{a}}
+{{a = a + 2}}
+{{a}}
+```
+```
+10
+12
+```
+
+If the variable name already exists in the context, its value will be replaced. If the variable name did not exist already, it is created.
+
+Assigning new values to object fields, arrays or maps is not supported and will never be supported. This would allow modification of Java side objects from within the template, a big no-no.
 
 ## Accessing fields
 When a context variable points to an object, you can access that object's fields like in Java (with one slight twist):
@@ -327,6 +362,19 @@ Array elements are accessed via `[index]` like in Java. To access map entries, y
 
 Both array indices and map keys can be arbitrary expressions. Array indices must evaluate to an `ìnt`. Map keys must evalute to the key type of the map.
 
+You can use a short-hand similar to member access on maps if the keys are strings without whitespace:
+
+```
+{{
+map = {
+    title ="Hello world",
+    tags = [ "JVM", "compilers", "ponies" ]
+}
+title = map.title
+firstTag = map.tags[0]
+}}
+```
+
 ## Access chaining
 Like in Java, you can infinitely nest member, array element and map accesses:
 
@@ -406,24 +454,6 @@ When a macro is called, it gets its own context. This context only contains the 
 Macros need to be defined at the top-level of a template (so, not inside other macros, control statements, etc.).
 
 > **Note**: Macros can currently not return a value to be used in an expression. A macro will always return `null` semantically. This might change in the future.
-
-## Assignments
-The templating language allows a limited form of assignements. You can set the value of a context variable in your template. This can be useful when you want to store function or method return values, or some intermediate results of a calculation:
-
-```
-{{{a = 10}}}
-{{a}}
-{{a = a + 2}}
-{{a}}
-```
-```
-10
-12
-```
-
-If the variable name already exists in the context, its value will be replaced. If the variable name did not exist already, it is created.
-
-Assigning new values to object fields, arrays or maps is not supported and will never be supported. This would allow modification of Java side objects from within the template, a big no-no.
 
 ## Control flow
 The templating language comes with 3 basic control flow statements. All control flow
@@ -527,8 +557,8 @@ While statements work as expected:
 ```
 {{i = 0}}
 {{while i < 3}}
-	{{i}}
-	{{i = i + 1}}
+    {{i}}
+    {{i = i + 1}}
 {{end}}
 ```
 ```
