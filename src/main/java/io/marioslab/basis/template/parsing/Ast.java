@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -1095,6 +1097,59 @@ public abstract class Ast {
 			} finally {
 				clearCachedArguments();
 			}
+		}
+	}
+
+	/** Represents a map literal of the form <code>{ key: value, key2: value, ... }</code> which can be nested. */
+	public static class MapLiteral extends Expression {
+		private final List<Span> keys;
+		private final List<Expression> values;
+
+		public MapLiteral (Span span, List<Span> keys, List<Expression> values) {
+			super(span);
+			this.keys = keys;
+			this.values = values;
+		}
+
+		public List<Span> getKeys () {
+			return keys;
+		}
+
+		public List<Expression> getValues () {
+			return values;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			Map<String, Object> map = new HashMap<>();
+			for (int i = 0, n = keys.size(); i < n; i++) {
+				Object value = values.get(i).evaluate(template, context, out);
+				map.put(keys.get(i).getText(), value);
+			}
+			return map;
+		}
+	}
+
+	/** Represents a list literal of the form <code>[ value, value2, value3, ...]</code> which can be nested. */
+	public static class ListLiteral extends Expression {
+		public final List<Expression> values;
+
+		public ListLiteral (Span span, List<Expression> values) {
+			super(span);
+			this.values = values;
+		}
+
+		public List<Expression> getValues () {
+			return values;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			List<Object> list = new ArrayList<>();
+			for (int i = 0, n = values.size(); i < n; i++) {
+				list.add(values.get(i).evaluate(template, context, out));
+			}
+			return list;
 		}
 	}
 

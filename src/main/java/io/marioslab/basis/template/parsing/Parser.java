@@ -24,8 +24,10 @@ import io.marioslab.basis.template.parsing.Ast.IfStatement;
 import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.IncludeRaw;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
+import io.marioslab.basis.template.parsing.Ast.ListLiteral;
 import io.marioslab.basis.template.parsing.Ast.LongLiteral;
 import io.marioslab.basis.template.parsing.Ast.Macro;
+import io.marioslab.basis.template.parsing.Ast.MapLiteral;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
@@ -297,6 +299,10 @@ public class Parser {
 	private Expression parseAccessOrCallOrLiteral (TokenStream stream) {
 		if (stream.match(TokenType.Identifier, false)) {
 			return parseAccessOrCall(stream);
+		} else if (stream.match(TokenType.LeftCurly, false)) {
+			return parseObjectLiteral(stream);
+		} else if (stream.match(TokenType.LeftBracket, false)) {
+			return parseListLiteral(stream);
 		} else if (stream.match(TokenType.StringLiteral, false)) {
 			return new StringLiteral(stream.expect(TokenType.StringLiteral).getSpan());
 		} else if (stream.match(TokenType.BooleanLiteral, false)) {
@@ -321,6 +327,35 @@ public class Parser {
 			Error.error("Expected a variable, field, map, array, function or method call, or literal.", stream);
 			return null; // not reached
 		}
+	}
+
+	private Expression parseObjectLiteral (TokenStream stream) {
+		Span openCurly = stream.expect(TokenType.LeftCurly).getSpan();
+
+		List<Span> keys = new ArrayList<>();
+		List<Expression> values = new ArrayList<>();
+		while (stream.hasMore() && !stream.match(TokenType.RightCurly, false)) {
+			keys.add(stream.expect(TokenType.Identifier).getSpan());
+			stream.expect(":");
+			values.add(parseExpression(stream));
+			if (!stream.match(TokenType.RightCurly, false)) stream.expect(TokenType.Comma);
+		}
+
+		Span closeCurly = stream.expect(TokenType.RightCurly).getSpan();
+		return new MapLiteral(new Span(openCurly, closeCurly), keys, values);
+	}
+
+	private Expression parseListLiteral (TokenStream stream) {
+		Span openBracket = stream.expect(TokenType.LeftBracket).getSpan();
+
+		List<Expression> values = new ArrayList<>();
+		while (stream.hasMore() && !stream.match(TokenType.RightBracket, false)) {
+			values.add(parseExpression(stream));
+			if (!stream.match(TokenType.RightBracket, false)) stream.expect(TokenType.Comma);
+		}
+
+		Span closeBracket = stream.expect(TokenType.RightBracket).getSpan();
+		return new ListLiteral(new Span(openBracket, closeBracket), values);
 	}
 
 	private Expression parseAccessOrCall (TokenStream stream) {

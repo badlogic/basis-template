@@ -26,12 +26,15 @@ import io.marioslab.basis.template.parsing.Ast.FunctionCall;
 import io.marioslab.basis.template.parsing.Ast.IfStatement;
 import io.marioslab.basis.template.parsing.Ast.Include;
 import io.marioslab.basis.template.parsing.Ast.IntegerLiteral;
+import io.marioslab.basis.template.parsing.Ast.ListLiteral;
 import io.marioslab.basis.template.parsing.Ast.LongLiteral;
 import io.marioslab.basis.template.parsing.Ast.Macro;
+import io.marioslab.basis.template.parsing.Ast.MapLiteral;
 import io.marioslab.basis.template.parsing.Ast.MapOrArrayAccess;
 import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
+import io.marioslab.basis.template.parsing.Ast.NullLiteral;
 import io.marioslab.basis.template.parsing.Ast.ShortLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
@@ -554,6 +557,40 @@ public class ParserTest {
 		assertNull(inc.getContext());
 		assertTrue(inc.isMacrosOnly());
 		assertEquals("math", inc.getAlias().getText());
+	}
+
+	@Test
+	public void testMapLiteral () {
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ { } }}")).getNodes();
+		assertEquals(1, nodes.size());
+		MapLiteral map = (MapLiteral)nodes.get(0);
+
+		nodes = new Parser().parse(new Source("test", "{{ {test: 123, test2: \"this is a test\"} }}")).getNodes();
+		assertEquals(1, nodes.size());
+		map = (MapLiteral)nodes.get(0);
+		assertEquals(2, map.getKeys().size());
+		assertEquals(2, map.getValues().size());
+		assertEquals("test", map.getKeys().get(0).getText());
+		assertEquals("test2", map.getKeys().get(1).getText());
+		assertTrue(map.getValues().get(0) instanceof IntegerLiteral);
+		assertTrue(map.getValues().get(1) instanceof StringLiteral);
+	}
+
+	@Test
+	public void testListLiteral () {
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ [] }}")).getNodes();
+		assertEquals(1, nodes.size());
+		ListLiteral list = (ListLiteral)nodes.get(0);
+
+		nodes = new Parser().parse(new Source("test", "{{  [ \"test\", 123, 123.4, true, null ]  }}")).getNodes();
+		assertEquals(1, nodes.size());
+		list = (ListLiteral)nodes.get(0);
+		assertEquals(5, list.getValues().size());
+		assertTrue(list.getValues().get(0) instanceof StringLiteral);
+		assertTrue(list.getValues().get(1) instanceof IntegerLiteral);
+		assertTrue(list.getValues().get(2) instanceof FloatLiteral);
+		assertTrue(list.getValues().get(3) instanceof BooleanLiteral);
+		assertTrue(list.getValues().get(4) instanceof NullLiteral);
 	}
 
 	@Test

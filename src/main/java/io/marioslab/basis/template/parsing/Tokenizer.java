@@ -146,6 +146,14 @@ public class Tokenizer {
 			// match closing tag
 			if (stream.match("}}", false)) break;
 
+			// single right curly for object literals
+			if (stream.match("}", false)) {
+				stream.startSpan();
+				stream.match("}", true);
+				tokens.add(new Token(TokenType.RightCurly, stream.endSpan()));
+				continue;
+			}
+
 			Error.error("Unknown token", new Span(source, stream.getPosition(), stream.getPosition() + 1));
 		}
 

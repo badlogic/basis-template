@@ -2,6 +2,7 @@
 package io.marioslab.basis.template;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,6 +58,38 @@ public class InterpreterTest {
 		String result = template.render(new TemplateContext());
 
 		assertEquals("Hello , true, 1234, 12.34, 123, 123, 123, 123.0, 123.0, 123.0, a, \n, world, \"\n\r\t\\", result);
+	}
+
+	@Test
+	public void testMapLiteral () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		loader.set("hello", "{{ map = { test: \"123\", test2: true, test3: { test4: 123 } } }}");
+		Template template = loader.load("hello");
+		TemplateContext context = new TemplateContext();
+		template.render(context);
+		Map<String, Object> map = (Map<String, Object>)context.get("map");
+		assertEquals(3, map.size());
+		assertEquals("123", map.get("test"));
+		assertEquals(true, map.get("test2"));
+		assertTrue(map.get("test3") instanceof Map);
+		assertEquals(123, ((Map<String, Object>)map.get("test3")).get("test4"));
+	}
+
+	@Test
+	public void testListLiteral () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		loader.set("hello", "{{ list = [ 123, true, null, \"test\", [ 1234 ]] }}");
+		Template template = loader.load("hello");
+		TemplateContext context = new TemplateContext();
+		template.render(context);
+		List<Object> list = (List<Object>)context.get("list");
+		assertEquals(5, list.size());
+		assertEquals(123, list.get(0));
+		assertEquals(true, list.get(1));
+		assertEquals(null, list.get(2));
+		assertEquals("test", list.get(3));
+		assertTrue(list.get(4) instanceof List);
+		assertEquals(1234, ((List<Object>)list.get(4)).get(0));
 	}
 
 	@Test
