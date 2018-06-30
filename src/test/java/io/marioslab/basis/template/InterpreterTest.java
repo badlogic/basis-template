@@ -76,6 +76,16 @@ public class InterpreterTest {
 	}
 
 	@Test
+	public void testMapMemberAccess () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		loader.set("hello", "{{ map = { test: \"123\", test2: true, test3: { test4: 123 } }; value = map.test3.test4 }}");
+		Template template = loader.load("hello");
+		TemplateContext context = new TemplateContext();
+		template.render(context);
+		assertEquals(123, context.get("value"));
+	}
+
+	@Test
 	public void testListLiteral () {
 		MapTemplateLoader loader = new MapTemplateLoader();
 		loader.set("hello", "{{ list = [ 123, true, null, \"test\", [ 1234 ]] }}");

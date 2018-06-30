@@ -789,8 +789,8 @@ public abstract class Ast {
 		}
 	}
 
-	/** Represents an access of a member (field or method) of the form <code>object.member</code>. Members may only be read
-	 * from. **/
+	/** Represents an access of a member (field or method or entry in a map) of the form <code>object.member</code>. Members may
+	 * only be read from. **/
 	public static class MemberAccess extends Expression {
 		private final Expression object;
 		private final Span name;
@@ -826,6 +826,7 @@ public abstract class Ast {
 			this.cachedMember = cachedMember;
 		}
 
+		@SuppressWarnings("rawtypes")
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			Object object = getObject().evaluate(template, context, out);
@@ -834,6 +835,12 @@ public abstract class Ast {
 			// special case for array.length
 			if (object.getClass().isArray() && getName().getText().equals("length")) {
 				return Array.getLength(object);
+			}
+
+			// special case for map, allows to do map.key instead of map[key]
+			if (object instanceof Map) {
+				Map map = (Map)object;
+				return map.get(getName().getText());
 			}
 
 			Object field = getCachedMember();
