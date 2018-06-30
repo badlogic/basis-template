@@ -300,7 +300,7 @@ public class Parser {
 		if (stream.match(TokenType.Identifier, false)) {
 			return parseAccessOrCall(stream);
 		} else if (stream.match(TokenType.LeftCurly, false)) {
-			return parseObjectLiteral(stream);
+			return parseMapLiteral(stream);
 		} else if (stream.match(TokenType.LeftBracket, false)) {
 			return parseListLiteral(stream);
 		} else if (stream.match(TokenType.StringLiteral, false)) {
@@ -329,7 +329,7 @@ public class Parser {
 		}
 	}
 
-	private Expression parseObjectLiteral (TokenStream stream) {
+	private Expression parseMapLiteral (TokenStream stream) {
 		Span openCurly = stream.expect(TokenType.LeftCurly).getSpan();
 
 		List<Span> keys = new ArrayList<>();
