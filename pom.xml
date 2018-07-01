@@ -46,6 +46,23 @@
 		<junit.version>4.12</junit.version>
 		<additionalparam>-Xdoclint:none</additionalparam>
 	</properties>
+	
+	<repositories>
+		<repository>
+			<id>oss-sonatype</id>
+			<name>oss-sonatype</name>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+
+		<repository>
+			<id>oss-sonatype-release</id>
+			<name>oss-sonatype-release</name>
+			<url>https://oss.sonatype.org/content/repositories/releases/</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
