@@ -25,7 +25,7 @@ public class Template {
 	private final List<Include> includes;
 
 	/** Internal. Created by {@link Parser}. **/
-	Template (List<Node> nodes, Macros macros, List<Include> includes) {
+	public Template (List<Node> nodes, Macros macros, List<Include> includes) {
 		this.nodes = nodes;
 		this.macros = macros;
 		this.includes = includes;
