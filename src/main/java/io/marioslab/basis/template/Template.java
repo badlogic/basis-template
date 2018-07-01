@@ -64,8 +64,19 @@ public class Template {
 	}
 
 	/** Renderes the template to the OutputStream as UTF-8, using the TemplateContext to resolve variable values referenced in the
-	 * template. **/
-	public void render (TemplateContext context, OutputStream out) {
-		AstInterpreter.interpret(this, context, out);
+	 * template. If a return statement with a return value was encountered, the method returns that return value. Otherwise null is
+	 * returned. **/
+	public Object render (TemplateContext context, OutputStream out) {
+		return AstInterpreter.interpret(this, context, out);
+	}
+
+	/** Evaluates this template using the TemplateContext to resolve variable values referenced in the template. Returns any value
+	 * returned by the template, or null. **/
+	public Object evaluate (TemplateContext context) {
+		return AstInterpreter.interpret(this, context, new OutputStream() {
+			@Override
+			public void write (int b) throws IOException {
+			}
+		});
 	}
 }

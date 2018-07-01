@@ -3,8 +3,10 @@ package io.marioslab.basis.template;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import io.marioslab.basis.template.interpreter.AstInterpreter;
 
@@ -62,6 +64,15 @@ public class TemplateContext {
 			if (value != null) return value;
 		}
 		return null;
+	}
+
+	/** Internal. Returns all variables currently defined in this context. */
+	public Set<String> getVariables () {
+		Set<String> variables = new HashSet<String>();
+		for (int i = 0, n = scopes.size(); i < n; i++) {
+			variables.addAll(scopes.get(i).keySet());
+		}
+		return variables;
 	}
 
 	/** Internal. Pushes a new "scope" onto the stack. **/

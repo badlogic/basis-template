@@ -453,11 +453,11 @@ A macro consists of a name, an argument list and a macro body. They are essentia
 
 The macro declaration (and definition) itself does not emit anything. However, when we call the macro like a function, the text and code spans in its body will be evaluated and emitted according to the arguments provided.
 
-When a macro is called, it gets its own context. This context only contains the arguments. Accessing the context of the enclosing template is not possible. This might change in the future.
+When a macro is called, it gets its own context. This context only contains the arguments and any included macros (see the section on includes below). Accessing the context of the enclosing template is not possible.
 
 Macros need to be defined at the top-level of a template (so, not inside other macros, control statements, etc.).
 
-> **Note**: Macros cannot currently return a value to be used in an expression. A macro will always return `null` semantically. This might change in the future.
+Macros cannot optionally return a value. See the section on return statements below. A macro without an explicit return statement will always return `null` semantically.
 
 ## Control flow
 The templating language comes with 3 basic control flow statements.
@@ -575,6 +575,41 @@ While statements work as expected:
 ### Continue and break
 You can use the familiar `continue` and `break` statements within all the above loop constructs. The statements will act on the innermost loop they are issued from.
 
+### Return
+You can exit a template early by using a `return` statement anywhere in your template.
+
+A return statement that does not return a value should be terminated with a `;':
+
+```
+{{
+    i = 5;
+    if (i == 5)
+        return;
+    end
+    // never reached
+}}
+```
+
+A return statement can also return an arbitrary value:
+
+```
+{{
+    return { title: "Hello world" }
+}}
+```
+
+A value-returning return statement does not need to be terminated by a `;`.
+
+You can also use return statements in macros to let the macro return a value.
+
+```
+{{
+macro myMacro (a, b)
+    return a + b
+end
+}}
+```
+
 ## Includes
 You can include another template in your template like this:
 
@@ -618,9 +653,9 @@ A template has a global scope in form of a template context. All code spans insi
 
 Bodies of if conditionals, for blocks, and while blocks create their own scope. A variable name is first looked up inside this scope, and then searched in the scopes above it (these statements can be nested). Variables in a higher scope may thus be shadowed by a lower scope.
 
-A macro creates its own scope and does not inherit the scope of the template it is defined or included in.
+A macro creates its own scope and does not inherit the scope of the template it is defined or included in. A macro does have access to other macros defined in the same template as well as macros included from other templates.
 
-An include without a context inherits the scope of the including template. An include with a context does not inhert the including template's scope. An include that only imports macros does not have any scope.
+An include without a context inherits the scope of the including template. An include with a context does not inherit the including template's scope. An include that only imports macros does not have any scope.
 
 ## Concurrency
 Basis-template `Template` and `TemplateLoader` instances are thread-safe. You can use them in multiple threads in parallel.

@@ -33,6 +33,7 @@ import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
 import io.marioslab.basis.template.parsing.Ast.NullLiteral;
+import io.marioslab.basis.template.parsing.Ast.Return;
 import io.marioslab.basis.template.parsing.Ast.ShortLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
@@ -85,9 +86,11 @@ public class Parser {
 				macros.put(macro.getName().getText(), macro);
 				result = macro; //
 			}
-		} else if (tokens.match("include", false))
+		} else if (tokens.match("include", false)) {
 			result = parseInclude(tokens, includes, rawIncludes);
-		else
+		} else if (tokens.match("return", false)) {
+			result = parseReturn(tokens);
+		} else
 			result = parseExpression(tokens);
 
 		// consume semi-colons as statement delimiters
@@ -403,6 +406,13 @@ public class Parser {
 			if (!stream.match(TokenType.RightParantheses, false)) stream.expect(TokenType.Comma);
 		}
 		return arguments;
+	}
+
+	private Node parseReturn (TokenStream tokens) {
+		Span returnSpan = tokens.expect("return").getSpan();
+		if (tokens.match(";", false)) return new Return(returnSpan, null);
+		Expression returnValue = parseExpression(tokens);
+		return new Return(new Span(returnSpan, returnValue.getSpan()), returnValue);
 	}
 
 	@SuppressWarnings("serial")

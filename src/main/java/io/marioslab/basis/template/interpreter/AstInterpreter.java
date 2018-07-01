@@ -12,6 +12,8 @@ import io.marioslab.basis.template.parsing.Ast;
 import io.marioslab.basis.template.parsing.Ast.Break;
 import io.marioslab.basis.template.parsing.Ast.Continue;
 import io.marioslab.basis.template.parsing.Ast.Node;
+import io.marioslab.basis.template.parsing.Ast.Return;
+import io.marioslab.basis.template.parsing.Ast.Return.ReturnValue;
 
 /**
  * <p>
@@ -27,14 +29,24 @@ import io.marioslab.basis.template.parsing.Ast.Node;
  * </p>
  **/
 public class AstInterpreter {
-	public static void interpret (Template template, TemplateContext context, OutputStream out) {
+	public static Object interpret (Template template, TemplateContext context, OutputStream out) {
 		try {
-			interpretNodeList(template.getNodes(), template, context, out);
+			Object result = interpretNodeList(template.getNodes(), template, context, out);
+			if (result == Return.RETURN_SENTINEL) {
+				return ((ReturnValue)result).getValue();
+			} else {
+				return null;
+			}
 		} catch (Throwable t) {
 			if (t instanceof TemplateException)
 				throw (TemplateException)t;
-			else
+			else {
 				io.marioslab.basis.template.Error.error("Couldn't interpret node list due to I/O error, " + t.getMessage(), template.getNodes().get(0).getSpan());
+				return null; // never reached
+			}
+		} finally {
+			// clear out RETURN_SENTINEL as it uses a ThreadLocal and would leak memory otherwise
+			Return.RETURN_SENTINEL.setValue(null);
 		}
 	}
 
@@ -43,7 +55,7 @@ public class AstInterpreter {
 			Node node = nodes.get(i);
 			Object value = node.evaluate(template, context, out);
 			if (value != null) {
-				if (value == Break.BREAK_SENTINEL || value == Continue.CONTINUE_SENTINEL)
+				if (value == Break.BREAK_SENTINEL || value == Continue.CONTINUE_SENTINEL || value == Return.RETURN_SENTINEL)
 					return value;
 				else
 					out.write(value.toString().getBytes("UTF-8"));

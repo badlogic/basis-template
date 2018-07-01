@@ -35,6 +35,7 @@ import io.marioslab.basis.template.parsing.Ast.MemberAccess;
 import io.marioslab.basis.template.parsing.Ast.MethodCall;
 import io.marioslab.basis.template.parsing.Ast.Node;
 import io.marioslab.basis.template.parsing.Ast.NullLiteral;
+import io.marioslab.basis.template.parsing.Ast.Return;
 import io.marioslab.basis.template.parsing.Ast.ShortLiteral;
 import io.marioslab.basis.template.parsing.Ast.StringLiteral;
 import io.marioslab.basis.template.parsing.Ast.TernaryOperation;
@@ -591,6 +592,19 @@ public class ParserTest {
 		assertTrue(list.getValues().get(2) instanceof FloatLiteral);
 		assertTrue(list.getValues().get(3) instanceof BooleanLiteral);
 		assertTrue(list.getValues().get(4) instanceof NullLiteral);
+	}
+
+	@Test
+	public void testReturn () {
+		List<Node> nodes = new Parser().parse(new Source("test", "{{ return; }}")).getNodes();
+		assertEquals(1, nodes.size());
+		Return ret = (Return)nodes.get(0);
+		assertNull(ret.getReturnValue());
+
+		nodes = new Parser().parse(new Source("test", "{{ return 1234 }}")).getNodes();
+		assertEquals(1, nodes.size());
+		ret = (Return)nodes.get(0);
+		assertTrue(ret.getReturnValue() instanceof IntegerLiteral);
 	}
 
 	@Test

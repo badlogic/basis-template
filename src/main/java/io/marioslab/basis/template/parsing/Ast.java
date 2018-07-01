@@ -18,6 +18,7 @@ import io.marioslab.basis.template.TemplateContext;
 import io.marioslab.basis.template.TemplateLoader.Source;
 import io.marioslab.basis.template.interpreter.AstInterpreter;
 import io.marioslab.basis.template.interpreter.Reflection;
+import io.marioslab.basis.template.parsing.Ast.Return.ReturnValue;
 import io.marioslab.basis.template.parsing.Parser.Macros;
 
 /** Templates are parsed into an abstract syntax tree (AST) nodes by a Parser. This class contains all AST node types. */
@@ -71,7 +72,7 @@ public abstract class Ast {
 			}
 		}
 
-		/** Returns the UTF-8 representatino of this text node. **/
+		/** Returns the UTF-8 representation of this text node. **/
 		public byte[] getBytes () {
 			return bytes;
 		}
@@ -963,13 +964,25 @@ public abstract class Ast {
 							if (macro.getArgumentNames().size() != arguments.size())
 								Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
 							TemplateContext macroContext = macro.getMacroContext();
+
+							// Set all included macros on the macro's context
+							for (String variable : context.getVariables()) {
+								Object value = context.get(variable);
+								if (value instanceof Macros) macroContext.set(variable, value);
+							}
+
+							// Set the arguments, shadowing any included macro names
 							for (int i = 0; i < arguments.size(); i++) {
 								Object arg = argumentValues[i];
 								String name = macro.getArgumentNames().get(i).getText();
 								macroContext.set(name, arg);
 							}
-							AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
-							return null;
+
+							Object retVal = AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+							if (retVal == Return.RETURN_SENTINEL)
+								return ((ReturnValue)retVal).getValue();
+							else
+								return null;
 						}
 					}
 					Error.error("Couldn't find function.", getSpan());
@@ -1063,13 +1076,24 @@ public abstract class Ast {
 						if (macro.getArgumentNames().size() != arguments.size())
 							Error.error("Expected " + macro.getArgumentNames().size() + " arguments, got " + arguments.size(), getSpan());
 						TemplateContext macroContext = macro.getMacroContext();
+
+						// Set all included macros on the macro's context
+						for (String variable : context.getVariables()) {
+							Object value = context.get(variable);
+							if (value instanceof Macros) macroContext.set(variable, value);
+						}
+
+						// Set arguments
 						for (int i = 0; i < arguments.size(); i++) {
 							Object arg = argumentValues[i];
 							String name = macro.getArgumentNames().get(i).getText();
 							macroContext.set(name, arg);
 						}
-						AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
-						return null;
+						Object result = AstInterpreter.interpretNodeList(macro.getBody(), macro.getTemplate(), macroContext, out);
+						if (result == Return.RETURN_SENTINEL)
+							return ((ReturnValue)result).getValue();
+						else
+							return null;
 					}
 				}
 
@@ -1198,9 +1222,9 @@ public abstract class Ast {
 			if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, getCondition().getSpan());
 			if ((Boolean)condition) {
 				context.push();
-				Object breakOrContinue = AstInterpreter.interpretNodeList(getTrueBlock(), template, context, out);
+				Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getTrueBlock(), template, context, out);
 				context.pop();
-				return breakOrContinue;
+				return breakOrContinueOrReturn;
 			}
 
 			if (getElseIfs().size() > 0) {
@@ -1210,18 +1234,18 @@ public abstract class Ast {
 						Error.error("Expected a condition evaluating to a boolean, got " + condition, elseIf.getCondition().getSpan());
 					if ((Boolean)condition) {
 						context.push();
-						Object breakOrContinue = AstInterpreter.interpretNodeList(elseIf.getTrueBlock(), template, context, out);
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(elseIf.getTrueBlock(), template, context, out);
 						context.pop();
-						return breakOrContinue;
+						return breakOrContinueOrReturn;
 					}
 				}
 			}
 
 			if (getFalseBlock().size() > 0) {
 				context.push();
-				Object breakOrContinue = AstInterpreter.interpretNodeList(getFalseBlock(), template, context, out);
+				Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getFalseBlock(), template, context, out);
 				context.pop();
-				return breakOrContinue;
+				return breakOrContinueOrReturn;
 			}
 			return null;
 		}
@@ -1253,6 +1277,43 @@ public abstract class Ast {
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			return CONTINUE_SENTINEL;
+		}
+	}
+
+	/** Represents a return statement that will stop the current iteration and continue with the next iteration in the inner-most
+	 * loop it is contained in. **/
+	public static class Return extends Node {
+
+		/** A sentital of which only one instance exists. Uses thread local storage to store an (optional) return value. See **/
+		public static class ReturnValue {
+			private final ThreadLocal<Object> value = new ThreadLocal<Object>();
+
+			public Object getValue () {
+				return value.get();
+			}
+
+			public void setValue (Object value) {
+				this.value.set(value);
+			}
+		}
+
+		public static final ReturnValue RETURN_SENTINEL = new ReturnValue();
+		private final Expression returnValue;
+
+		public Return (Span span, Expression returnValue) {
+			super(span);
+			this.returnValue = returnValue;
+		}
+
+		/** Returns the return value expression. May be null for return statements without a return value. **/
+		public Expression getReturnValue () {
+			return returnValue;
+		}
+
+		@Override
+		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
+			RETURN_SENTINEL.setValue(returnValue != null ? returnValue.evaluate(template, context, out) : null);
+			return RETURN_SENTINEL;
 		}
 	}
 
@@ -1306,9 +1367,13 @@ public abstract class Ast {
 						Entry e = (Entry)entry;
 						context.setOnCurrentScope(keyName, e.getKey());
 						context.setOnCurrentScope(valueName, e.getValue());
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1316,9 +1381,13 @@ public abstract class Ast {
 					context.push();
 					for (Object value : map.values()) {
 						context.setOnCurrentScope(valueName, value);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1332,9 +1401,13 @@ public abstract class Ast {
 					while (iter.hasNext()) {
 						context.setOnCurrentScope(keyName, i++);
 						context.setOnCurrentScope(valueName, iter.next());
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1343,9 +1416,13 @@ public abstract class Ast {
 					context.push();
 					while (iter.hasNext()) {
 						context.setOnCurrentScope(valueName, iter.next());
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1358,9 +1435,13 @@ public abstract class Ast {
 					context.push();
 					while (iter.hasNext()) {
 						context.setOnCurrentScope(valueName, iter.next());
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1373,9 +1454,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1383,9 +1468,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1398,9 +1487,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1408,9 +1501,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1423,9 +1520,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1433,9 +1534,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1448,9 +1553,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1458,9 +1567,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1473,9 +1586,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1483,9 +1600,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1498,9 +1619,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1508,9 +1633,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1523,9 +1652,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1533,9 +1666,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1548,9 +1685,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1558,9 +1699,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1573,9 +1718,13 @@ public abstract class Ast {
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(keyName, i);
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1583,9 +1732,13 @@ public abstract class Ast {
 					context.push();
 					for (int i = 0, n = array.length; i < n; i++) {
 						context.setOnCurrentScope(valueName, array[i]);
-						Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-						if (breakOrContinue == Break.BREAK_SENTINEL) {
+						Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+						if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 							break;
+						}
+						if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+							context.pop();
+							return breakOrContinueOrReturn;
 						}
 					}
 					context.pop();
@@ -1623,9 +1776,13 @@ public abstract class Ast {
 				Object condition = getCondition().evaluate(template, context, out);
 				if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, getCondition().getSpan());
 				if (!((Boolean)condition)) break;
-				Object breakOrContinue = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-				if (breakOrContinue == Break.BREAK_SENTINEL) {
+				Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
+				if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
 					break;
+				}
+				if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
+					context.pop();
+					return breakOrContinueOrReturn;
 				}
 			}
 			context.pop();

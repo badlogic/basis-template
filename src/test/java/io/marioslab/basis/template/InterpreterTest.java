@@ -898,4 +898,42 @@ public class InterpreterTest {
 		result = template.render(context);
 		assertEquals("1:TEST", result);
 	}
+
+	@Test
+	public void testMacroCallingIncludedMacro () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{ include \"hello2\" as math; macro test () math.helloWorld(1, \"test\") end test ()}}");
+		loader.set("hello2", "{{ macro helloWorld(num, text) num \":\" text end }}");
+		Template template = loader.load("hello");
+		String result = template.render(context);
+		assertEquals("1:test", result);
+	}
+
+	@Test
+	public void testReturn () {
+		MapTemplateLoader loader = new MapTemplateLoader();
+		TemplateContext context = new TemplateContext();
+
+		loader.set("hello", "{{ return; }} un-reachable");
+		Template template = loader.load("hello");
+		String result = template.render(context);
+		assertEquals("", result);
+
+		loader.set("hello", "{{ return 123; }} un-reachable");
+		template = loader.load("hello");
+		Object retVal = template.evaluate(context);
+		assertEquals(123, retVal);
+
+		loader.set("hello", "{{ if (true) i = 0; while i < 10 if i == 5 return i end i = i + 1 end end }} un-reachable");
+		template = loader.load("hello");
+		retVal = template.evaluate(context);
+		assertEquals(5, retVal);
+
+		loader.set("hello", "{{ macro test () return 123 end return test() }} un-reachable");
+		template = loader.load("hello");
+		retVal = template.evaluate(context);
+		assertEquals(123, retVal);
+	}
 }
