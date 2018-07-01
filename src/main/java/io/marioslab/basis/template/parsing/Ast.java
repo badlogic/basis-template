@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import io.marioslab.basis.template.Error;
+import io.marioslab.basis.template.Error.TemplateException;
 import io.marioslab.basis.template.Template;
 import io.marioslab.basis.template.TemplateContext;
 import io.marioslab.basis.template.TemplateLoader.Source;
@@ -953,7 +954,12 @@ public abstract class Ast {
 					method = Reflection.getInstance().getMethod(function, null, argumentValues);
 					if (method == null) Error.error("Couldn't find function.", getSpan());
 					setCachedFunction(method);
-					return Reflection.getInstance().callMethod(function, method, argumentValues);
+					try {
+						return Reflection.getInstance().callMethod(function, method, argumentValues);
+					} catch (Throwable t) {
+						Error.error(t.getMessage(), getSpan(), t);
+						return null; // never reached
+					}
 				} else {
 					// Check if this is a call to a macro defined in this template
 					if (getFunction() instanceof VariableAccess) {
@@ -1111,7 +1117,12 @@ public abstract class Ast {
 				if (method != null) {
 					// found the method on the object, call it
 					setCachedMethod(method);
-					return Reflection.getInstance().callMethod(object, method, argumentValues);
+					try {
+						return Reflection.getInstance().callMethod(object, method, argumentValues);
+					} catch (Throwable t) {
+						Error.error(t.getMessage(), getSpan(), t);
+						return null; // never reached
+					}
 				} else {
 					// didn't find the method on the object, try to find a field pointing to a lambda
 					Object field = Reflection.getInstance().getField(object, getMethod().getName().getText());
@@ -1123,7 +1134,12 @@ public abstract class Ast {
 					if (method == null) Error.error(
 						"Couldn't find function in field '" + getMethod().getName().getText() + "' for object of type '" + object.getClass().getSimpleName() + "'.",
 						getSpan());
-					return Reflection.getInstance().callMethod(function, method, argumentValues);
+					try {
+						return Reflection.getInstance().callMethod(function, method, argumentValues);
+					} catch (Throwable t) {
+						Error.error(t.getMessage(), getSpan(), t);
+						return null; // never reached
+					}
 				}
 			} finally {
 				clearCachedArguments();
@@ -1887,20 +1903,24 @@ public abstract class Ast {
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
 			Template other = getTemplate();
 
-			if (!isMacrosOnly()) {
-				if (getContext().isEmpty()) {
-					AstInterpreter.interpretNodeList(other.getNodes(), other, context, out);
-				} else {
-					TemplateContext otherContext = new TemplateContext();
-					for (Span span : getContext().keySet()) {
-						String key = span.getText();
-						Object value = getContext().get(span).evaluate(template, context, out);
-						otherContext.set(key, value);
+			try {
+				if (!isMacrosOnly()) {
+					if (getContext().isEmpty()) {
+						AstInterpreter.interpretNodeList(other.getNodes(), other, context, out);
+					} else {
+						TemplateContext otherContext = new TemplateContext();
+						for (Span span : getContext().keySet()) {
+							String key = span.getText();
+							Object value = getContext().get(span).evaluate(template, context, out);
+							otherContext.set(key, value);
+						}
+						AstInterpreter.interpretNodeList(other.getNodes(), other, otherContext, out);
 					}
-					AstInterpreter.interpretNodeList(other.getNodes(), other, otherContext, out);
+				} else {
+					context.set(getAlias().getText(), getTemplate().getMacros());
 				}
-			} else {
-				context.set(getAlias().getText(), getTemplate().getMacros());
+			} catch (TemplateException e) {
+				Error.error("Error in included file.", this.getSpan(), e);
 			}
 			return null;
 		}
