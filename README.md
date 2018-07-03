@@ -33,6 +33,23 @@ mvn clean install
 
 The resulting `.jar` file will be located in the `target/` folder.
 
+You can also find `SNAPSHOT` builds of the latest and greatest changes to the master branch in the SonaType snapshots repository. The snapshot is build by [Jenkins](https://libgdx.badlogicgames.com/jenkins/job/basis-template/)
+
+To add that snapshot repository to your Maven `pom.xml` use the following snippet:
+
+```
+<repositories>
+    <repository>
+        <id>oss-sonatype</id>
+        <name>oss-sonatype</name>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
 ## Basic Usage
 Create a new file called `helloworld.bt` with the following content:
 
