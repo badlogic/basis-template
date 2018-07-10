@@ -92,7 +92,7 @@ public interface TemplateLoader {
 			// resolve includes and macros
 			String rootDir = null;
 			if (new File(source.getPath()).getParent() != null) {
-				rootDir = new File(rootDir).getParent() + "/";
+				rootDir = new File(source.getPath()).getParent() + "/";
 			} else {
 				rootDir = "";
 			}
