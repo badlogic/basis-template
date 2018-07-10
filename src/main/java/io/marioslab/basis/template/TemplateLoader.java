@@ -90,9 +90,11 @@ public interface TemplateLoader {
 			ParserResult result = new Parser().parse(source);
 
 			// resolve includes and macros
-			String rootDir = source.getPath();
-			if (new File(rootDir).getParent() != null) {
+			String rootDir = null;
+			if (new File(source.getPath()).getParent() != null) {
 				rootDir = new File(rootDir).getParent() + "/";
+			} else {
+				rootDir = "";
 			}
 			for (Include include : result.getIncludes()) {
 				String includePath = include.getPath().getText();
@@ -100,7 +102,8 @@ public interface TemplateLoader {
 					Template template = load(rootDir + includePath.substring(1, includePath.length() - 1));
 					include.setTemplate(template);
 				} catch (Throwable t) {
-					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.", include.getSpan(), t);
+					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.",
+						include.getSpan(), t);
 				}
 			}
 
@@ -110,7 +113,8 @@ public interface TemplateLoader {
 					Source content = loadSource(rootDir + includePath.substring(1, includePath.length() - 1));
 					rawInclude.setContent(content.content.getBytes("UTF-8"));
 				} catch (Throwable t) {
-					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.", rawInclude.getSpan(), t);
+					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.",
+						rawInclude.getSpan(), t);
 				}
 			}
 
