@@ -91,11 +91,8 @@ public interface TemplateLoader {
 
 			// resolve includes and macros
 			String rootDir = source.getPath();
-			int lastSlashIndex = rootDir.lastIndexOf('/');
-			if (lastSlashIndex >= 0) {
-				rootDir = rootDir.substring(0, lastSlashIndex + 1);
-			} else {
-				rootDir = "";
+			if (new File(rootDir).getParent() != null) {
+				rootDir = new File(rootDir).getParent() + "/";
 			}
 			for (Include include : result.getIncludes()) {
 				String includePath = include.getPath().getText();
