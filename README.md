@@ -17,13 +17,13 @@ As a dependency of your Maven project:
 <dependency>
    <groupId>io.marioslab.basis</groupId>
    <artifactId>template</artifactId>
-   <version>1.6</version>
+   <version>1.7</version>
 </dependency>
 ```
 
 As a dependency of your Gradle project:
 ```
-compile 'io.marioslab.basis:template:1.6'
+compile 'io.marioslab.basis:template:1.7'
 ```
 
 You can also build the `.jar` file yourself, assuming you have Maven and JDK 1.8+ installed:
