@@ -9,7 +9,7 @@
 
 	<groupId>io.marioslab.basis</groupId>
 	<artifactId>template</artifactId>
-	<version>1.6-SNAPSHOT</version>
+	<version>1.6</version>
 	<packaging>jar</packaging>
 
 	<name>Basis Template</name>
