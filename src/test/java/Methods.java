@@ -1,10 +1,10 @@
 import java.util.Iterator;
 import java.util.function.BiFunction;
 
-import io.marioslab.basis.template.Template;
-import io.marioslab.basis.template.TemplateContext;
-import io.marioslab.basis.template.TemplateLoader;
-import io.marioslab.basis.template.TemplateLoader.ClasspathTemplateLoader;
+import tech.gospel.basis.template.Template;
+import tech.gospel.basis.template.TemplateContext;
+import tech.gospel.basis.template.TemplateLoader;
+import tech.gospel.basis.template.TemplateLoader.ClasspathTemplateLoader;
 
 public class Methods {
 	public static class MyObject {

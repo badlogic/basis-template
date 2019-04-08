@@ -1,7 +1,7 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
-import io.marioslab.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.TemplateLoader.Source;
 
 /** A span within a source string denoted by start and end index, with the latter being exclusive. */
 public class Span {

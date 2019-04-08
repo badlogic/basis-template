@@ -1,10 +1,10 @@
 
-package io.marioslab.basis.template;
+package tech.gospel.basis.template;
 
-import io.marioslab.basis.template.TemplateLoader.Source;
-import io.marioslab.basis.template.parsing.Span;
-import io.marioslab.basis.template.parsing.TokenStream;
-import io.marioslab.basis.template.parsing.Span.Line;
+import tech.gospel.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.parsing.Span;
+import tech.gospel.basis.template.parsing.TokenStream;
+import tech.gospel.basis.template.parsing.Span.Line;
 
 /** All errors reported by the library go through the static functions of this class. */
 public class Error {

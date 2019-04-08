@@ -1,4 +1,7 @@
 .classpath
 .project
 .settings/
+.idea/
+template.iml
+
 /target/

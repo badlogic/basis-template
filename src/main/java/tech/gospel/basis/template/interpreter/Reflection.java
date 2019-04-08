@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template.interpreter;
+package tech.gospel.basis.template.interpreter;
 
 /** Used by {@link AstInterpreter} to access fields and methods of objects. This is a singleton class used by all
  * {@link AstInterpreter} instances. Replace the default implementation via {@link #setInstance(Reflection)}. The implementation

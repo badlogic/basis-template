@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
 /** A token produced by the {@link Tokenizer}. */
 public class Token {

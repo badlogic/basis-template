@@ -1,10 +1,10 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
 import java.util.List;
 
-import io.marioslab.basis.template.Error;
-import io.marioslab.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.Error;
+import tech.gospel.basis.template.TemplateLoader.Source;
 
 /** Iterates over a list of {@link Token} instances, provides methods to match expected tokens and throw errors in case of a
  * mismatch. */

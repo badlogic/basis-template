@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -12,15 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import io.marioslab.basis.template.Error;
-import io.marioslab.basis.template.Error.TemplateException;
-import io.marioslab.basis.template.Template;
-import io.marioslab.basis.template.TemplateContext;
-import io.marioslab.basis.template.TemplateLoader.Source;
-import io.marioslab.basis.template.interpreter.AstInterpreter;
-import io.marioslab.basis.template.interpreter.Reflection;
-import io.marioslab.basis.template.parsing.Ast.Return.ReturnValue;
-import io.marioslab.basis.template.parsing.Parser.Macros;
+import tech.gospel.basis.template.Error;
+import tech.gospel.basis.template.Template;
+import tech.gospel.basis.template.TemplateContext;
+import tech.gospel.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.interpreter.AstInterpreter;
+import tech.gospel.basis.template.interpreter.Reflection;
+import tech.gospel.basis.template.parsing.Ast.Return.ReturnValue;
 
 /** Templates are parsed into an abstract syntax tree (AST) nodes by a Parser. This class contains all AST node types. */
 public abstract class Ast {
@@ -964,7 +962,7 @@ public abstract class Ast {
 					// Check if this is a call to a macro defined in this template
 					if (getFunction() instanceof VariableAccess) {
 						String functionName = ((VariableAccess)getFunction()).getVariableName().getText();
-						Macros macros = template.getMacros();
+						Parser.Macros macros = template.getMacros();
 						Macro macro = macros.get(functionName);
 						if (macro != null) {
 							if (macro.getArgumentNames().size() != arguments.size())
@@ -974,7 +972,7 @@ public abstract class Ast {
 							// Set all included macros on the macro's context
 							for (String variable : context.getVariables()) {
 								Object value = context.get(variable);
-								if (value instanceof Macros) macroContext.set(variable, value);
+								if (value instanceof Parser.Macros) macroContext.set(variable, value);
 							}
 
 							// Set the arguments, shadowing any included macro names
@@ -1075,8 +1073,8 @@ public abstract class Ast {
 
 				// if the object we call the method on is a Macros instance, lookup the macro by name
 				// and execute its node list
-				if (object instanceof Macros) {
-					Macros macros = (Macros)object;
+				if (object instanceof Parser.Macros) {
+					Parser.Macros macros = (Parser.Macros)object;
 					Macro macro = macros.get(getMethod().getName().getText());
 					if (macro != null) {
 						if (macro.getArgumentNames().size() != arguments.size())
@@ -1086,7 +1084,7 @@ public abstract class Ast {
 						// Set all included macros on the macro's context
 						for (String variable : context.getVariables()) {
 							Object value = context.get(variable);
-							if (value instanceof Macros) macroContext.set(variable, value);
+							if (value instanceof Parser.Macros) macroContext.set(variable, value);
 						}
 
 						// Set arguments
@@ -1919,7 +1917,7 @@ public abstract class Ast {
 				} else {
 					context.set(getAlias().getText(), getTemplate().getMacros());
 				}
-			} catch (TemplateException e) {
+			} catch (Error.TemplateException e) {
 				Error.error("Error in included file.", this.getSpan(), e);
 			}
 			return null;

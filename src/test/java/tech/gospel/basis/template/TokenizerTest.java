@@ -1,17 +1,18 @@
 
-package io.marioslab.basis.template;
+package tech.gospel.basis.template;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.util.List;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-import io.marioslab.basis.template.TemplateLoader.Source;
-import io.marioslab.basis.template.parsing.Token;
-import io.marioslab.basis.template.parsing.TokenType;
-import io.marioslab.basis.template.parsing.Tokenizer;
+import tech.gospel.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.parsing.Token;
+import tech.gospel.basis.template.parsing.TokenType;
+import tech.gospel.basis.template.parsing.Tokenizer;
 
 public class TokenizerTest {
 	@Test
@@ -59,7 +60,7 @@ public class TokenizerTest {
 		List<Token> tokens = new Tokenizer().tokenize(new Source("test",
 			"{{ . + - * / ( ) [ ] < > <= >= == = && || ! 1 123 123. 123.432 \"this is a string literal with a \\\" quote \" _id var_234 $id , ; 1b 1s 1l 1f 1.0d 'c' '\\n'}}"));
 		assertEquals("Expected 35 tokens", 35, tokens.size());
-		assertEquals(TokenType.Period, tokens.get(0).getType());
+		Assert.assertEquals(TokenType.Period, tokens.get(0).getType());
 		assertEquals(TokenType.Plus, tokens.get(1).getType());
 		assertEquals(TokenType.Minus, tokens.get(2).getType());
 		assertEquals(TokenType.Asterisk, tokens.get(3).getType());

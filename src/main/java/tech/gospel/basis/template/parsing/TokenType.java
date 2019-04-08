@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
 import java.util.Arrays;
 import java.util.Comparator;

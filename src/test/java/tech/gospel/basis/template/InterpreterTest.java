@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template;
+package tech.gospel.basis.template;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -15,7 +15,7 @@ import java.util.function.IntFunction;
 
 import org.junit.Test;
 
-import io.marioslab.basis.template.TemplateLoader.MapTemplateLoader;
+import tech.gospel.basis.template.TemplateLoader.MapTemplateLoader;
 
 public class InterpreterTest {
 	class OtherObject {

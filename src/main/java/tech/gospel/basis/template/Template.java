@@ -1,19 +1,18 @@
 
-package io.marioslab.basis.template;
+package tech.gospel.basis.template;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.List;
 
-import io.marioslab.basis.template.interpreter.AstInterpreter;
-import io.marioslab.basis.template.parsing.Ast;
-import io.marioslab.basis.template.parsing.Ast.Include;
-import io.marioslab.basis.template.parsing.Ast.Macro;
-import io.marioslab.basis.template.parsing.Ast.Node;
-import io.marioslab.basis.template.parsing.Parser;
-import io.marioslab.basis.template.parsing.Parser.Macros;
+import tech.gospel.basis.template.interpreter.AstInterpreter;
+import tech.gospel.basis.template.parsing.Ast;
+import tech.gospel.basis.template.parsing.Ast.Include;
+import tech.gospel.basis.template.parsing.Ast.Macro;
+import tech.gospel.basis.template.parsing.Ast.Node;
+import tech.gospel.basis.template.parsing.Parser;
+import tech.gospel.basis.template.parsing.Parser.Macros;
 
 /** A template is loaded by a {@link TemplateLoader} from a file marked up with the basis-template language. The template can be
  * rendered to a {@link String} or {@link OutputStream} by calling one of the <code>render()</code> methods. The

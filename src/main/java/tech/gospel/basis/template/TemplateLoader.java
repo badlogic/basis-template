@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template;
+package tech.gospel.basis.template;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -10,11 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.marioslab.basis.template.parsing.Ast.Include;
-import io.marioslab.basis.template.parsing.Ast.IncludeRaw;
-import io.marioslab.basis.template.parsing.Parser;
-import io.marioslab.basis.template.parsing.Parser.ParserResult;
-import io.marioslab.basis.template.parsing.Span;
+import tech.gospel.basis.template.parsing.Parser;
+import tech.gospel.basis.template.parsing.Span;
+import tech.gospel.basis.template.parsing.Ast;
 
 /** A template loader loads a {@link Template} from a path, and recursively loads other templates the template may reference. See
  * {@link CachingTemplateLoader}, {@link ClasspathTemplateLoader}, {@link FileTemplateLoader} and {@link MapTemplateLoader} for
@@ -87,7 +85,7 @@ public interface TemplateLoader {
 
 		protected Template compileTemplate (Source source) {
 			// Parse the template
-			ParserResult result = new Parser().parse(source);
+			Parser.ParserResult result = new Parser().parse(source);
 
 			// resolve includes and macros
 			String rootDir = null;
@@ -96,24 +94,24 @@ public interface TemplateLoader {
 			} else {
 				rootDir = "";
 			}
-			for (Include include : result.getIncludes()) {
+			for (Ast.Include include : result.getIncludes()) {
 				String includePath = include.getPath().getText();
 				try {
 					Template template = load(rootDir + includePath.substring(1, includePath.length() - 1));
 					include.setTemplate(template);
 				} catch (Throwable t) {
-					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.",
+					Error.error("Couldn't load included template '" + includePath + "'.",
 						include.getSpan(), t);
 				}
 			}
 
-			for (IncludeRaw rawInclude : result.getRawIncludes()) {
+			for (Ast.IncludeRaw rawInclude : result.getRawIncludes()) {
 				String includePath = rawInclude.getPath().getText();
 				try {
 					Source content = loadSource(rootDir + includePath.substring(1, includePath.length() - 1));
 					rawInclude.setContent(content.content.getBytes("UTF-8"));
 				} catch (Throwable t) {
-					io.marioslab.basis.template.Error.error("Couldn't load included template '" + includePath + "'.",
+					Error.error("Couldn't load included template '" + includePath + "'.",
 						rawInclude.getSpan(), t);
 				}
 			}

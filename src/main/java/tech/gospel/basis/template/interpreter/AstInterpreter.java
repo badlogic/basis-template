@@ -1,19 +1,14 @@
 
-package io.marioslab.basis.template.interpreter;
+package tech.gospel.basis.template.interpreter;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-import io.marioslab.basis.template.Error.TemplateException;
-import io.marioslab.basis.template.Template;
-import io.marioslab.basis.template.TemplateContext;
-import io.marioslab.basis.template.parsing.Ast;
-import io.marioslab.basis.template.parsing.Ast.Break;
-import io.marioslab.basis.template.parsing.Ast.Continue;
-import io.marioslab.basis.template.parsing.Ast.Node;
-import io.marioslab.basis.template.parsing.Ast.Return;
-import io.marioslab.basis.template.parsing.Ast.Return.ReturnValue;
+import tech.gospel.basis.template.Template;
+import tech.gospel.basis.template.TemplateContext;
+import tech.gospel.basis.template.parsing.Ast;
+import tech.gospel.basis.template.Error;
 
 /**
  * <p>
@@ -32,30 +27,30 @@ public class AstInterpreter {
 	public static Object interpret (Template template, TemplateContext context, OutputStream out) {
 		try {
 			Object result = interpretNodeList(template.getNodes(), template, context, out);
-			if (result == Return.RETURN_SENTINEL) {
-				return ((ReturnValue)result).getValue();
+			if (result == Ast.Return.RETURN_SENTINEL) {
+				return ((Ast.Return.ReturnValue)result).getValue();
 			} else {
 				return null;
 			}
 		} catch (Throwable t) {
-			if (t instanceof TemplateException)
-				throw (TemplateException)t;
+			if (t instanceof Error.TemplateException)
+				throw (Error.TemplateException)t;
 			else {
-				io.marioslab.basis.template.Error.error("Couldn't interpret node list due to I/O error, " + t.getMessage(), template.getNodes().get(0).getSpan());
+				Error.error("Couldn't interpret node list due to I/O error, " + t.getMessage(), template.getNodes().get(0).getSpan());
 				return null; // never reached
 			}
 		} finally {
 			// clear out RETURN_SENTINEL as it uses a ThreadLocal and would leak memory otherwise
-			Return.RETURN_SENTINEL.setValue(null);
+			Ast.Return.RETURN_SENTINEL.setValue(null);
 		}
 	}
 
-	public static Object interpretNodeList (List<Node> nodes, Template template, TemplateContext context, OutputStream out) throws IOException {
+	public static Object interpretNodeList (List<Ast.Node> nodes, Template template, TemplateContext context, OutputStream out) throws IOException {
 		for (int i = 0, n = nodes.size(); i < n; i++) {
-			Node node = nodes.get(i);
+			Ast.Node node = nodes.get(i);
 			Object value = node.evaluate(template, context, out);
 			if (value != null) {
-				if (value == Break.BREAK_SENTINEL || value == Continue.CONTINUE_SENTINEL || value == Return.RETURN_SENTINEL)
+				if (value == Ast.Break.BREAK_SENTINEL || value == Ast.Continue.CONTINUE_SENTINEL || value == Ast.Return.RETURN_SENTINEL)
 					return value;
 				else
 					out.write(value.toString().getBytes("UTF-8"));

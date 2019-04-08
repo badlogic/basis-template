@@ -1,7 +1,7 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
-import io.marioslab.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.TemplateLoader.Source;
 
 /** Wraps a the content of a {@link Source} and handles traversing the contained characters. Manages a current {@link Span} via
  * the {@link #startSpan()} and {@link #endSpan()} methods. */

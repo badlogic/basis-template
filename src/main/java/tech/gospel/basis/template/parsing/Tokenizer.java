@@ -1,11 +1,11 @@
 
-package io.marioslab.basis.template.parsing;
+package tech.gospel.basis.template.parsing;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import io.marioslab.basis.template.Error;
-import io.marioslab.basis.template.TemplateLoader.Source;
+import tech.gospel.basis.template.Error;
+import tech.gospel.basis.template.TemplateLoader.Source;
 
 public class Tokenizer {
 

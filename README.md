@@ -60,10 +60,10 @@ Hello {{name}}.
 We can then load the template from the file on the classpath, set the value of the template variable `name`, and render the template to a string, which we output to the console.
 
 ```java
-import io.marioslab.basis.template.Template;
-import io.marioslab.basis.template.TemplateContext;
-import io.marioslab.basis.template.TemplateLoader;
-import io.marioslab.basis.template.TemplateLoader.ClasspathTemplateLoader;
+import tech.gospel.basis.template.Template;
+import tech.gospel.basis.template.TemplateContext;
+import tech.gospel.basis.template.TemplateLoader;
+import tech.gospel.basis.template.TemplateLoader.ClasspathTemplateLoader;
 
 public class BasicUsage {
    public static void main (String[] args) {

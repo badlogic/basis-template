@@ -1,5 +1,5 @@
 
-package io.marioslab.basis.template.interpreter;
+package tech.gospel.basis.template.interpreter;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
