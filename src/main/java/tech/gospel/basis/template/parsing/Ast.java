@@ -1785,21 +1785,7 @@ public abstract class Ast {
 
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
-			context.push();
-			while (true) {
-				Object condition = getCondition().evaluate(template, context, out);
-				if (!(condition instanceof Boolean)) Error.error("Expected a condition evaluating to a boolean, got " + condition, getCondition().getSpan());
-				if (!((Boolean)condition)) break;
-				Object breakOrContinueOrReturn = AstInterpreter.interpretNodeList(getBody(), template, context, out);
-				if (breakOrContinueOrReturn == Break.BREAK_SENTINEL) {
-					break;
-				}
-				if (breakOrContinueOrReturn == Return.RETURN_SENTINEL) {
-					context.pop();
-					return breakOrContinueOrReturn;
-				}
-			}
-			context.pop();
+		  Error.error("while statement are not supported", getCondition().getSpan());
 			return null;
 		}
 	}
@@ -1899,28 +1885,8 @@ public abstract class Ast {
 
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
-			Template other = getTemplate();
-
-			try {
-				if (!isMacrosOnly()) {
-					if (getContext().isEmpty()) {
-						AstInterpreter.interpretNodeList(other.getNodes(), other, context, out);
-					} else {
-						TemplateContext otherContext = new TemplateContext();
-						for (Span span : getContext().keySet()) {
-							String key = span.getText();
-							Object value = getContext().get(span).evaluate(template, context, out);
-							otherContext.set(key, value);
-						}
-						AstInterpreter.interpretNodeList(other.getNodes(), other, otherContext, out);
-					}
-				} else {
-					context.set(getAlias().getText(), getTemplate().getMacros());
-				}
-			} catch (Error.TemplateException e) {
-				Error.error("Error in included file.", this.getSpan(), e);
-			}
-			return null;
+      Error.error("include statements are not supported.", this.getSpan());
+      return null;
 		}
 	}
 
@@ -1949,7 +1915,7 @@ public abstract class Ast {
 
 		@Override
 		public Object evaluate (Template template, TemplateContext context, OutputStream out) throws IOException {
-			out.write(content);
+      Error.error("raw include statements are not supported.", this.getSpan());
 			return null;
 		}
 	}
