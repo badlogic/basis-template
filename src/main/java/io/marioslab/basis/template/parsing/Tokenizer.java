@@ -17,10 +17,12 @@ public class Tokenizer {
 		if (source.getContent().length() == 0) return tokens;
 		CharacterStream stream = new CharacterStream(source);
 		stream.startSpan();
-
+		
 		// TODO: this will fall on its face if we have something like {{ "}}" }}.
 		while (stream.hasMore()) {
-			if (stream.match("{{", false)) {
+			if (stream.match("\\{", true)) {
+				// NOP
+			} else if(stream.match("{{", false)) {
 				if (!stream.isSpanEmpty()) tokens.add(new Token(TokenType.TextBlock, stream.endSpan()));
 				stream.startSpan();
 				while (!stream.match("}}", true)) {
