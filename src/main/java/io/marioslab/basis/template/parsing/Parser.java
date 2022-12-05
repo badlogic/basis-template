@@ -307,8 +307,10 @@ public class Parser {
 		} else if (stream.match(TokenType.LeftBracket, false)) {
 			return parseListLiteral(stream);
 		} else if (stream.match(TokenType.StringLiteral, false)) {
-			return new StringLiteral(stream.expect(TokenType.StringLiteral).getSpan());
-		} else if (stream.match(TokenType.BooleanLiteral, false)) {
+			return new StringLiteral(stream.expect(TokenType.StringLiteral).getSpan(), false);
+		} else if (stream.match(TokenType.RawStringLiteral, false)) {
+			return new StringLiteral(stream.expect(TokenType.RawStringLiteral).getSpan(), true);
+		}else if (stream.match(TokenType.BooleanLiteral, false)) {
 			return new BooleanLiteral(stream.expect(TokenType.BooleanLiteral).getSpan());
 		} else if (stream.match(TokenType.DoubleLiteral, false)) {
 			return new DoubleLiteral(stream.expect(TokenType.DoubleLiteral).getSpan());

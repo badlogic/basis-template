@@ -48,6 +48,7 @@ public enum TokenType {
 	ByteLiteral("a byte integer number"),
 	CharacterLiteral("a character"),
 	StringLiteral("a string"),
+	RawStringLiteral("a string"),
 	NullLiteral("null"),
 	Identifier("an identifier");
 	// @on

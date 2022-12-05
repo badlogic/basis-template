@@ -673,7 +673,7 @@ public abstract class Ast {
 	public static class StringLiteral extends Expression {
 		private final String value;
 
-		public StringLiteral (Span literal) {
+		public StringLiteral (Span literal, boolean raw) {
 			super(literal);
 			String text = getSpan().getText();
 			String unescapedValue = text.substring(1, text.length() - 1);
@@ -681,18 +681,22 @@ public abstract class Ast {
 
 			CharacterStream stream = new CharacterStream(new Source(literal.getSource().getPath(), unescapedValue));
 			while (stream.hasMore()) {
-				if (stream.match("\\\\", true))
-					builder.append('\\');
-				else if (stream.match("\\n", true))
-					builder.append('\n');
-				else if (stream.match("\\r", true))
-					builder.append('\r');
-				else if (stream.match("\\t", true))
-					builder.append('\t');
-				else if (stream.match("\\\"", true))
-					builder.append('"');
-				else
+				if (!raw) {
+					if (stream.match("\\\\", true))
+						builder.append('\\');
+					else if (stream.match("\\n", true))
+						builder.append('\n');
+					else if (stream.match("\\r", true))
+						builder.append('\r');
+					else if (stream.match("\\t", true))
+						builder.append('\t');
+					else if (stream.match("\\\"", true))
+						builder.append('"');
+					else
+						builder.append(stream.consume());
+				} else {
 					builder.append(stream.consume());
+				}
 			}
 			value = builder.toString();
 		}
@@ -1030,7 +1034,7 @@ public abstract class Ast {
 		}
 
 		/** Returns the cached member descriptor as returned by {@link Reflection#getMethod(Object, String, Object...)}. See
-		 * {@link #setCachedMember(Object)}. **/
+		 * {@link #setCachedMethod(Object)}. **/
 		public Object getCachedMethod () {
 			return cachedMethod;
 		}

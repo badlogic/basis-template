@@ -135,7 +135,7 @@ public class Tokenizer {
 					if (!matchedEndQuote) Error.error("String literal is not closed by double quote", stream.endSpan());
 					Span stringSpan = stream.endSpan();
 					stringSpan = new Span(stringSpan.getSource(), stringSpan.getStart() - 1, stringSpan.getEnd());
-					tokens.add(new Token(TokenType.StringLiteral, stringSpan));
+					tokens.add(new Token(TokenType.RawStringLiteral, stringSpan));
 					continue;
 				}
 
