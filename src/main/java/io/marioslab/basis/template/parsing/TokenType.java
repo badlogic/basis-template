@@ -38,6 +38,7 @@ public enum TokenType {
 	Not("!", "!"),
 	Questionmark("?", "?"),
 	DoubleQuote("\"", "\""),
+	Backtick("`", "`"),
 	BooleanLiteral("true or false"),
 	DoubleLiteral("a double floating point number"),
 	FloatLiteral("a floating point number"),

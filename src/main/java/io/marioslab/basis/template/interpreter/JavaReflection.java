@@ -3,6 +3,7 @@ package io.marioslab.basis.template.interpreter;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,13 +80,16 @@ public class JavaReflection extends Reflection {
 
 		if (method == null) {
 			try {
-				if (name == null) {
-					method = findApply(cls);
-				} else {
-					method = findMethod(cls, name, parameterTypes);
+				if (Modifier.isPublic(cls.getModifiers())) {
+					if (name == null) {
+						method = findApply(cls);
+					} else {
+						method = findMethod(cls, name, parameterTypes);
+					}
+
+					method.setAccessible(true);
+					methods.put(signature, method);
 				}
-				method.setAccessible(true);
-				methods.put(signature, method);
 			} catch (Throwable e) {
 				// fall through
 			}
@@ -105,6 +109,18 @@ public class JavaReflection extends Reflection {
 						// fall through
 					}
 					parentClass = parentClass.getSuperclass();
+				}
+			}
+
+			if (method == null) {
+				Class[] interfaces = cls.getInterfaces();
+				for (Class itf : interfaces) {
+					if (name == null)
+						method = findApply(itf);
+					else {
+						method = findMethod(itf, name, parameterTypes);
+					}
+					if (method != null) break;
 				}
 			}
 		}

@@ -17,7 +17,7 @@ public class Tokenizer {
 		if (source.getContent().length() == 0) return tokens;
 		CharacterStream stream = new CharacterStream(source);
 		stream.startSpan();
-		
+
 		// TODO: this will fall on its face if we have something like {{ "}}" }}.
 		while (stream.hasMore()) {
 			if (stream.match("\\{", true)) {
@@ -116,6 +116,28 @@ public class Tokenizer {
 				tokens.add(new Token(TokenType.StringLiteral, stringSpan));
 				continue;
 			}
+
+				// String literal backtick
+				if (stream.match(TokenType.Backtick.getLiteral(), true)) {
+					stream.startSpan();
+					boolean matchedEndQuote = false;
+					while (stream.hasMore()) {
+						// Note: escape sequences like \n are parsed in StringLiteral
+						if (stream.match("\\", true)) {
+							stream.consume();
+						}
+						if (stream.match(TokenType.Backtick.getLiteral(), true)) {
+							matchedEndQuote = true;
+							break;
+						}
+						stream.consume();
+					}
+					if (!matchedEndQuote) Error.error("String literal is not closed by double quote", stream.endSpan());
+					Span stringSpan = stream.endSpan();
+					stringSpan = new Span(stringSpan.getSource(), stringSpan.getStart() - 1, stringSpan.getEnd());
+					tokens.add(new Token(TokenType.StringLiteral, stringSpan));
+					continue;
+				}
 
 			// Identifier, keyword, boolean literal, or null literal
 			if (stream.matchIdentifierStart(true)) {

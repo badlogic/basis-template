@@ -22,7 +22,7 @@ public class InterpreterTest {
 		float a = 123.456f;
 	}
 
-	class MyObject {
+	public class MyObject {
 		int field1 = 123;
 		int field2 = 456;
 		private int field3 = 789;
